@@ -85,6 +85,7 @@ const MarginalVoice = {
           pluginID: this.id,
           label: "Marginal Voice",
           src: this.rootURI + "chrome/content/preferences.xhtml",
+          scripts: [this.rootURI + "chrome/content/preferences.js"],
           image: this.rootURI + "skin/icon-48.png"
         });
         this.log("info", "Preference pane registered");
