@@ -53,9 +53,9 @@ const MarginalVoice = {
       const parts = [];
       if (a.message) parts.push(a.message);
       if (a.stack) parts.push(a.stack);
-      return parts.length > 0 ? parts.join("\n", true) : String(a);
+      return parts.length > 0 ? parts.join("\n") : String(a);
     }
-    if (typeof a === "string", true) return a;
+    if (typeof a === "string") return a;
     try {
       return JSON.stringify(a);
     } catch {
@@ -67,13 +67,13 @@ const MarginalVoice = {
     const logLevel = Zotero.Prefs.get("extensions.marginalvoice.logLevel", true) || "info";
     const levels = { debug: 0, info: 1, warn: 2, error: 3 };
     if (levels[level] >= levels[logLevel]) {
-      Zotero.debug(`[MarginalVoice] ${level.toUpperCase()}: ${args.map(a => this.formatLogArg(a)).join(" ", true)}`);
+      Zotero.debug(`[MarginalVoice] ${level.toUpperCase()}: ${args.map(a => this.formatLogArg(a)).join(" ")}`);
     }
   },
 
   async init({ id, version, rootURI }) {
     this.rootURI = rootURI;
-    this.log("info", "Initializing Marginal Voice plugin", true);
+    this.log("info", "Initializing Marginal Voice plugin");
 
     // Extract bundled helper script to a temp file so Python can execute it
     await this.extractHelperScript();
@@ -88,12 +88,12 @@ const MarginalVoice = {
           scripts: [this.rootURI + "chrome/content/preferences.js"],
           image: this.rootURI + "skin/icon-48.png"
         });
-        this.log("info", "Preference pane registered", true);
+        this.log("info", "Preference pane registered");
       } catch (e) {
         this.log("error", "Failed to register preference pane:", e);
       }
     } else {
-      this.log("warn", "Zotero.PreferencePanes not available", true);
+      this.log("warn", "Zotero.PreferencePanes not available");
     }
   },
 
@@ -105,7 +105,7 @@ const MarginalVoice = {
 
       const tmpDir = Zotero.getTempDirectory();
       const tmpFile = tmpDir.clone();
-      tmpFile.append("zaa-helper.py", true);
+      tmpFile.append("zaa-helper.py");
       if (tmpFile.exists()) {
         tmpFile.remove(false);
       }
@@ -120,7 +120,7 @@ const MarginalVoice = {
 
   async readURI(uri) {
     // Try modern Fetch API first
-    if (typeof fetch !== "undefined", true) {
+    if (typeof fetch !== "undefined") {
       try {
         const response = await fetch(uri);
         if (response.ok) return await response.text();
@@ -130,7 +130,7 @@ const MarginalVoice = {
     }
 
     // Fallback to NetUtil for resource:// / jar:// URIs
-    const { NetUtil } = ChromeUtils.import("resource://gre/modules/NetUtil.jsm", true);
+    const { NetUtil } = ChromeUtils.import("resource://gre/modules/NetUtil.jsm");
     return new Promise((resolve, reject) => {
       NetUtil.asyncFetch(
         {
@@ -150,7 +150,7 @@ const MarginalVoice = {
   },
 
   shutdown() {
-    this.log("info", "Shutting down Marginal Voice plugin", true);
+    this.log("info", "Shutting down Marginal Voice plugin");
     this.unregisterMenus();
   },
 
@@ -164,36 +164,36 @@ const MarginalVoice = {
 
   registerMenus(window) {
     const doc = window.document;
-    const itemMenu = doc.getElementById("zotero-itemmenu", true);
+    const itemMenu = doc.getElementById("zotero-itemmenu");
     if (!itemMenu) return;
 
     // Separator
-    const sep = doc.createXULElement("menuseparator", true);
+    const sep = doc.createXULElement("menuseparator");
     sep.id = "marginalvoice-separator";
     itemMenu.appendChild(sep);
     this.menuItems.push(sep);
 
     // Submenu
-    const menu = doc.createXULElement("menu", true);
+    const menu = doc.createXULElement("menu");
     menu.id = "marginalvoice-menu";
-    menu.setAttribute("label", "Marginal Voice", true);
+    menu.setAttribute("label", "Marginal Voice");
     this.menuItems.push(menu);
 
-    const popup = doc.createXULElement("menupopup", true);
+    const popup = doc.createXULElement("menupopup");
     popup.id = "marginalvoice-popup";
     menu.appendChild(popup);
 
     // Transcribe and Annotate
-    const item1 = doc.createXULElement("menuitem", true);
+    const item1 = doc.createXULElement("menuitem");
     item1.id = "marginalvoice-transcribe-one";
-    item1.setAttribute("label", "Transcribe and Annotate", true);
+    item1.setAttribute("label", "Transcribe and Annotate");
     item1.addEventListener("command", () => this.handleTranscribeCommand(window, false));
     popup.appendChild(item1);
 
     // Transcribe and Annotate All Audio
-    const item2 = doc.createXULElement("menuitem", true);
+    const item2 = doc.createXULElement("menuitem");
     item2.id = "marginalvoice-transcribe-all";
-    item2.setAttribute("label", "Transcribe and Annotate All Audio", true);
+    item2.setAttribute("label", "Transcribe and Annotate All Audio");
     item2.addEventListener("command", () => this.handleTranscribeCommand(window, true));
     popup.appendChild(item2);
 
@@ -245,13 +245,13 @@ const MarginalVoice = {
     const items = window.ZoteroPane.getSelectedItems();
     const audioItems = items.filter(item => this.isAudioAttachment(item));
     if (audioItems.length === 0) {
-      window.alert("No audio file selected.", true);
+      window.alert("No audio file selected.");
       return;
     }
 
     const toProcess = processAll ? audioItems : [audioItems[0]];
     const progress = new Zotero.ProgressWindow({ window });
-    progress.changeHeadline("Marginal Voice", true);
+    progress.changeHeadline("Marginal Voice");
     progress.show();
 
     let processed = 0;
@@ -260,11 +260,11 @@ const MarginalVoice = {
 
     for (const audioItem of toProcess) {
       processed++;
-      const itemProgress = new progress.ItemProgress("audio", `Processing ${audioItem.getField("title", true) || "audio file"}...`);
+      const itemProgress = new progress.ItemProgress("audio", `Processing ${audioItem.getField("title") || "audio file"}...`);
       try {
         await this.transcribeAndAnnotate(audioItem);
         itemProgress.setProgress(100);
-        itemProgress.setText("Done", true);
+        itemProgress.setText("Done");
         succeeded++;
       } catch (err) {
         this.log("error", "Failed to process audio:", err);
@@ -281,12 +281,12 @@ const MarginalVoice = {
   async transcribeAndAnnotate(audioItem) {
     // Get audio file path
     const audioPath = await audioItem.getFilePathAsync();
-    if (!audioPath) throw new Error("Cannot access audio file path.", true);
+    if (!audioPath) throw new Error("Cannot access audio file path.");
 
     // Get parent PDF attachments
     const pdfAttachments = this.getParentPDFAttachments(audioItem);
     if (pdfAttachments.length === 0) {
-      throw new Error("No PDF attachment found on parent item.", true);
+      throw new Error("No PDF attachment found on parent item.");
     }
     const pdfItem = pdfAttachments[0];
     const pdfPath = await pdfItem.getFilePathAsync();
@@ -298,7 +298,7 @@ const MarginalVoice = {
     const transcriptWords = (typeof transcription === "object" && Array.isArray(transcription.words)) ? transcription.words : null;
     this.log("info", "Transcript:", transcriptText);
     if (transcriptWords) {
-      this.log("debug", "Word timestamps:", transcriptWords.length, "words", true);
+      this.log("debug", "Word timestamps:", transcriptWords.length, "words");
     }
 
     // Find quote segments. Only treat a trigger phrase as a keyword when the
@@ -356,7 +356,7 @@ const MarginalVoice = {
   async transcribeAudio(audioPath) {
     const mode = Zotero.Prefs.get("extensions.marginalvoice.transcriptionMode", true) || "python";
 
-    if (mode === "custom", true) {
+    if (mode === "custom") {
       return this.transcribeWithCustomCommand(audioPath);
     }
     return this.transcribeWithPython(audioPath);
@@ -368,11 +368,11 @@ const MarginalVoice = {
     const model = Zotero.Prefs.get("extensions.marginalvoice.whisperModel", true) || "base";
 
     const tmpFile = Zotero.getTempDirectory();
-    tmpFile.append("marginalvoice_transcript.json", true);
+    tmpFile.append("marginalvoice_transcript.json");
     tmpFile.createUnique(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, 0o666);
 
     const args = [helperPath, "transcribe", "--audio", audioPath, "--model", model, "--output", tmpFile.path];
-    this.log("debug", "Running:", pythonPath, args.join(" ", true));
+    this.log("debug", "Running:", pythonPath, args.join(" "));
 
     await this.runCommand(pythonPath, args);
 
@@ -395,10 +395,10 @@ const MarginalVoice = {
 
   async transcribeWithCustomCommand(audioPath) {
     const cmdPath = Zotero.Prefs.get("extensions.marginalvoice.customCommandPath", true);
-    if (!cmdPath) throw new Error("Custom command path not configured.", true);
+    if (!cmdPath) throw new Error("Custom command path not configured.");
 
     const tmpFile = Zotero.getTempDirectory();
-    tmpFile.append("marginalvoice_transcript.json", true);
+    tmpFile.append("marginalvoice_transcript.json");
     tmpFile.createUnique(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, 0o666);
 
     const argsStr = Zotero.Prefs.get("extensions.marginalvoice.customCommandArgs", true) || "";
@@ -443,10 +443,10 @@ const MarginalVoice = {
     const exitCode = await new Promise((resolve, reject) => {
       const observer = {
         observe(subject, topic) {
-          if (topic === "process-finished", true) {
+          if (topic === "process-finished") {
             resolve(subject.exitValue);
-          } else if (topic === "process-failed", true) {
-            reject(new Error("Process failed to start", true));
+          } else if (topic === "process-failed") {
+            reject(new Error("Process failed to start"));
           }
         }
       };
@@ -462,7 +462,7 @@ const MarginalVoice = {
     });
 
     if (exitCode !== 0) {
-      throw new Error(`Command failed with exit code ${exitCode}: ${cmdPath} ${args.join(" ", true)}`);
+      throw new Error(`Command failed with exit code ${exitCode}: ${cmdPath} ${args.join(" ")}`);
     }
   },
 
@@ -480,7 +480,7 @@ const MarginalVoice = {
     process.startHidden = true;
 
     const quotedCmd = this.escapeShellArg(cmdPath);
-    const quotedArgs = args.map(a => this.escapeShellArg(a)).join(" ", true);
+    const quotedArgs = args.map(a => this.escapeShellArg(a)).join(" ");
     const redirectCmd = isWin
       ? `${quotedCmd} ${quotedArgs} > "${outputPath}" 2>&1`
       : `${quotedCmd} ${quotedArgs} > ${this.escapeShellArg(outputPath)} 2>&1`;
@@ -490,10 +490,10 @@ const MarginalVoice = {
     const exitCode = await new Promise((resolve, reject) => {
       const observer = {
         observe(subject, topic) {
-          if (topic === "process-finished", true) {
+          if (topic === "process-finished") {
             resolve(subject.exitValue);
-          } else if (topic === "process-failed", true) {
-            reject(new Error("Shell process failed to start", true));
+          } else if (topic === "process-failed") {
+            reject(new Error("Shell process failed to start"));
           }
         }
       };
@@ -517,9 +517,9 @@ const MarginalVoice = {
     if (Zotero.isWin) {
       // Simple Windows quoting
       if (!/\s/.test(arg)) return arg;
-      return `"${arg.replace(/"/g, "\"\"", true)}"`;
+      return `"${arg.replace(/"/g, "\"\"")}"`;
     }
-    return "'" + arg.replace(/'/g, "'\"'\"'", true) + "'";
+    return "'" + arg.replace(/'/g, "'\"'\"'") + "'";
   },
 
   getPythonPath() {
@@ -534,7 +534,7 @@ const MarginalVoice = {
     const configured = Zotero.Prefs.get("extensions.marginalvoice.helperScriptPath", true);
     if (configured) return configured;
     if (!this.helperScriptTempPath) {
-      throw new Error("Helper script has not been extracted. Please restart Zotero.", true);
+      throw new Error("Helper script has not been extracted. Please restart Zotero.");
     }
     return this.helperScriptTempPath;
   },
@@ -561,7 +561,7 @@ const MarginalVoice = {
       let matchedCount = 0;
       for (let count = maxWords; count >= minWords; count--) {
         const probeWords = contentWords.slice(0, count);
-        const probe = probeWords.map(w => w.word).join(" ", true);
+        const probe = probeWords.map(w => w.word).join(" ");
         const match = await this.matchQuoteInPDF(pdfPath, probe);
         if (match) {
           matchedCount = count;
@@ -605,8 +605,8 @@ const MarginalVoice = {
 
       const segmentEnd = Math.min(nextTriggerStart, silenceBoundary);
       const segmentWords = wordList.slice(current.endWordIndex, segmentEnd);
-      const quoteCandidate = segmentWords.slice(0, current.matchedCount).map(w => w.word).join(" ", true);
-      const commentary = segmentWords.slice(current.matchedCount).map(w => w.word).join(" ", true);
+      const quoteCandidate = segmentWords.slice(0, current.matchedCount).map(w => w.word).join(" ");
+      const commentary = segmentWords.slice(current.matchedCount).map(w => w.word).join(" ");
 
       finalSegments.push({
         trigger: current.phrase,
@@ -630,7 +630,7 @@ const MarginalVoice = {
     if (words && Array.isArray(words) && words.length > 0) {
       return words.map(w => ({
         word: w.word || "",
-        normalized: w.normalized || this.normalizeWord(w.word || "", true),
+        normalized: w.normalized || this.normalizeWord(w.word || ""),
         start: typeof w.start === "number" ? w.start : null,
         end: typeof w.end === "number" ? w.end : null
       })).filter(w => w.word.length > 0);
@@ -648,7 +648,7 @@ const MarginalVoice = {
   },
 
   normalizeWord(word) {
-    return word.replace(/[^\w\-]/g, "", true).toLowerCase();
+    return word.replace(/[^\w\-]/g, "").toLowerCase();
   },
 
   findTriggerOccurrences(wordList, triggers) {
@@ -698,7 +698,7 @@ const MarginalVoice = {
 
   findQuoteInPDF(fullText, quoteCandidate, threshold) {
     // Normalize whitespace and lowercase
-    const normalize = (s) => s.replace(/\s+/g, " ", true).trim().toLowerCase();
+    const normalize = (s) => s.replace(/\s+/g, " ").trim().toLowerCase();
     const nCandidate = normalize(quoteCandidate);
     const candidateWords = nCandidate.split(/\s+/).filter(w => w.length > 0);
 
@@ -717,7 +717,7 @@ const MarginalVoice = {
           sentence: match.sentence,
           pageIndex: match.pageIndex,
           matchedWords: wordCount,
-          commentary: commentaryWords.join(" ", true).trim()
+          commentary: commentaryWords.join(" ").trim()
         };
       }
     }
@@ -752,9 +752,9 @@ const MarginalVoice = {
   // Build a regex that allows optional hyphens within words, then search original text
   findRegexMatchInText(fullText, words) {
     // Replace page separators with spaces for regex search, but keep original for position mapping
-    const searchText = fullText.replace(/\f/g, " ", true);
-    const patterns = words.map(w => w.replace(/-/g, "[-]?", true));
-    const regex = new RegExp(patterns.map(p => `(?:${p})`).join("\\s+", true), "i", true);
+    const searchText = fullText.replace(/\f/g, " ");
+    const patterns = words.map(w => w.replace(/-/g, "[-]?"));
+    const regex = new RegExp(patterns.map(p => `(?:${p})`).join("\\s+"), "i");
     const match = searchText.match(regex);
     if (!match) return null;
 
@@ -771,7 +771,7 @@ const MarginalVoice = {
     let pageIndex = 0;
 
     for (let i = 0; i < text.length; i++) {
-      if (text[i] === "\f", true) {
+      if (text[i] === "\f") {
         pageIndex++;
         continue;
       }
@@ -847,7 +847,7 @@ const MarginalVoice = {
     const helperPath = this.getHelperScriptPath();
 
     const tmpFile = Zotero.getTempDirectory();
-    tmpFile.append("marginalvoice_match.json", true);
+    tmpFile.append("marginalvoice_match.json");
     tmpFile.createUnique(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, 0o666);
 
     const args = [helperPath, "match", "--pdf", pdfPath, "--quote", quoteCandidate, "--output", tmpFile.path];
@@ -885,7 +885,7 @@ const MarginalVoice = {
     const helperPath = this.getHelperScriptPath();
 
     const tmpFile = Zotero.getTempDirectory();
-    tmpFile.append("marginalvoice_locate.json", true);
+    tmpFile.append("marginalvoice_locate.json");
     tmpFile.createUnique(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, 0o666);
 
     const args = [helperPath, "locate", "--pdf", pdfPath, "--text", text, "--output", tmpFile.path];
@@ -916,13 +916,13 @@ const MarginalVoice = {
   async findExistingAnnotation(pdfItem, text, position) {
     const annotations = pdfItem.getAnnotations();
     for (const ann of annotations) {
-      if (ann.annotationType !== "highlight", true) continue;
+      if (ann.annotationType !== "highlight") continue;
       const annText = ann.annotationText || "";
       // Normalize for comparison
       if (this.normalizeText(annText) === this.normalizeText(text)) {
         // Also check position similarity
         try {
-          const annPos = JSON.parse(ann.annotationPosition || "{}", true);
+          const annPos = JSON.parse(ann.annotationPosition || "{}");
           if (annPos.pageIndex === position.pageIndex) {
             return ann;
           }
@@ -944,7 +944,7 @@ const MarginalVoice = {
 
       // Avoid appending identical or already-present commentary
       if (normalizedExisting === normalizedNew || normalizedExisting.endsWith(normalizedNew)) {
-        this.log("info", "Commentary already present on annotation; skipping append", true);
+        this.log("info", "Commentary already present on annotation; skipping append");
         return;
       }
 
@@ -958,14 +958,14 @@ const MarginalVoice = {
   },
 
   normalizeText(text) {
-    return text.replace(/\s+/g, " ", true).trim().toLowerCase();
+    return text.replace(/\s+/g, " ").trim().toLowerCase();
   },
 
   async createHighlightAnnotation(pdfItem, text, comment, position, color) {
     // Build sortIndex: pageIndex | textOffset | yFromTop
     const pageIndex = position.pageIndex;
     const yFromTop = Math.max(0, Math.floor(position.rects[0][3] || 0));
-    const sortIndex = `${String(pageIndex).padStart(5, "0", true)}|${String(0).padStart(6, "0", true)}|${String(yFromTop).padStart(5, "0", true)}`;
+    const sortIndex = `${String(pageIndex).padStart(5, "0")}|${String(0).padStart(6, "0")}|${String(yFromTop).padStart(5, "0")}`;
 
     let key;
     try {
@@ -1000,7 +1000,7 @@ const MarginalVoice = {
       } else {
         annotation = await Zotero.Annotations.saveFromJSON(pdfItem, json);
       }
-      this.log("info", "Created annotation:", annotation?.key || annotation?.id || "unknown", true);
+      this.log("info", "Created annotation:", annotation?.key || annotation?.id || "unknown");
       return annotation;
     } catch (err) {
       this.log("error", "Failed to create annotation:", err);
