@@ -938,6 +938,15 @@ const MarginalVoice = {
     if (!commentary) return;
     try {
       const existingComment = annotation.annotationComment || "";
+      const normalizedExisting = this.normalizeText(existingComment);
+      const normalizedNew = this.normalizeText(commentary);
+
+      // Avoid appending identical or already-present commentary
+      if (normalizedExisting === normalizedNew || normalizedExisting.endsWith(normalizedNew)) {
+        this.log("info", "Commentary already present on annotation; skipping append");
+        return;
+      }
+
       const separator = existingComment ? "\n\n" : "";
       annotation.annotationComment = existingComment + separator + commentary;
       await annotation.saveTx();

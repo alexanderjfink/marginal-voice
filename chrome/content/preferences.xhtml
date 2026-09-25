@@ -32,8 +32,6 @@
       padding: 4px 6px;
       border: 1px solid #999;
       border-radius: 3px;
-      background: #fff;
-      color: #000;
       font-size: 0.95em;
     }
     #marginalvoice-preferences input[type="text"] {
@@ -73,14 +71,6 @@
     #marginalvoice-preferences button {
       padding: 4px 10px;
       cursor: pointer;
-    }
-    #marginalvoice-preferences .mv-color-swatch {
-      display: inline-block;
-      width: 12px;
-      height: 12px;
-      border: 1px solid #666;
-      margin-right: 6px;
-      vertical-align: middle;
     }
   </style>
 
@@ -132,8 +122,8 @@
     </div>
 
     <div style="margin-top: 10px;">
-      <button type="button" onclick="addTriggerRow()">+ Add Trigger</button>
-      <button type="button" onclick="resetDefaults()" style="margin-left: 8px;">Reset Defaults</button>
+      <button type="button" id="marginalvoice-addTrigger">+ Add Trigger</button>
+      <button type="button" id="marginalvoice-resetDefaults" style="margin-left: 8px;">Reset Defaults</button>
     </div>
   </div>
 
@@ -168,7 +158,7 @@
     </p>
   </div>
 
-  <script>
+  <script type="application/javascript">
     <![CDATA[
       "use strict";
 
@@ -358,10 +348,21 @@
         }
       }
 
+      function attachButtonListeners() {
+        const addBtn = document.getElementById("marginalvoice-addTrigger");
+        const resetBtn = document.getElementById("marginalvoice-resetDefaults");
+        if (addBtn) addBtn.addEventListener("click", addTriggerRow);
+        if (resetBtn) resetBtn.addEventListener("click", resetDefaults);
+      }
+
       if (document.readyState === "complete" || document.readyState === "interactive") {
         loadPrefs();
+        attachButtonListeners();
       } else {
-        window.addEventListener("load", loadPrefs);
+        window.addEventListener("load", function() {
+          loadPrefs();
+          attachButtonListeners();
+        });
       }
       mvLog("preferences script loaded, readyState=" + document.readyState);
     ]]>
