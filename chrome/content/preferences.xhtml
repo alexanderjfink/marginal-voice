@@ -47,6 +47,93 @@
     }
   </html:style>
 
+  <groupbox>
+    <label value="Transcription" style="font-weight: bold;" />
+
+    <hbox class="mv-row" align="center">
+      <html:label for="marginalvoice-transcriptionMode">Mode:</html:label>
+      <menulist id="marginalvoice-transcriptionMode" oncommand="savePrefs()">
+        <menupopup>
+          <menuitem value="python" label="Python Script (faster-whisper)" />
+          <menuitem value="custom" label="Custom Command" />
+        </menupopup>
+      </menulist>
+    </hbox>
+
+    <hbox class="mv-row" align="center">
+      <html:label for="marginalvoice-pythonPath">Python Path (optional):</html:label>
+      <html:input type="text" id="marginalvoice-pythonPath" style="width: 300px;" onchange="savePrefs()" />
+    </hbox>
+
+    <hbox class="mv-row" align="center">
+      <html:label for="marginalvoice-helperScriptPath">Helper Script Path (optional):</html:label>
+      <html:input type="text" id="marginalvoice-helperScriptPath" style="width: 300px;" onchange="savePrefs()" />
+    </hbox>
+
+    <hbox class="mv-row" align="center">
+      <html:label for="marginalvoice-customCommandPath">Custom Command Path:</html:label>
+      <html:input type="text" id="marginalvoice-customCommandPath" style="width: 300px;" onchange="savePrefs()" />
+    </hbox>
+
+    <hbox class="mv-row" align="center">
+      <html:label for="marginalvoice-customCommandArgs">Custom Command Args (use {audio}):</html:label>
+      <html:input type="text" id="marginalvoice-customCommandArgs" style="width: 300px;" onchange="savePrefs()" />
+    </hbox>
+
+    <hbox class="mv-row" align="center">
+      <html:label for="marginalvoice-whisperModel">Whisper Model:</html:label>
+      <html:input type="text" id="marginalvoice-whisperModel" style="width: 120px;" onchange="savePrefs()" />
+    </hbox>
+  </groupbox>
+
+  <groupbox style="margin-top: 12px;">
+    <label value="Trigger Words &amp; Colors" style="font-weight: bold;" />
+
+    <description style="margin: 5px 0; font-size: 0.9em; color: gray;">
+      Say a trigger phrase followed by the text you want highlighted.
+    </description>
+
+    <vbox id="marginalvoice-triggers-list" style="margin: 8px 0;">
+    </vbox>
+
+    <hbox style="margin-top: 8px;">
+      <button label="+ Add Trigger" oncommand="addTriggerRow()" />
+      <button label="Reset Defaults" oncommand="resetDefaults()" style="margin-left: 8px;" />
+    </hbox>
+  </groupbox>
+
+  <groupbox style="margin-top: 12px;">
+    <label value="Annotation Behavior" style="font-weight: bold;" />
+
+    <hbox class="mv-row" align="center">
+      <html:label for="marginalvoice-silenceTimeout">Silence Timeout (seconds):</html:label>
+      <html:input type="number" id="marginalvoice-silenceTimeout" style="width: 80px;" min="1" max="60" onchange="savePrefs()" />
+    </hbox>
+
+    <hbox class="mv-row" align="center">
+      <html:label for="marginalvoice-logLevel">Log Level:</html:label>
+      <menulist id="marginalvoice-logLevel" oncommand="savePrefs()">
+        <menupopup>
+          <menuitem value="debug" label="Debug" />
+          <menuitem value="info" label="Info" />
+          <menuitem value="warn" label="Warn" />
+          <menuitem value="error" label="Error" />
+        </menupopup>
+      </menulist>
+    </hbox>
+
+    <hbox class="mv-row" align="center">
+      <checkbox id="marginalvoice-skipDuplicates" label="Append commentary to existing highlights" oncommand="savePrefs()" />
+    </hbox>
+  </groupbox>
+
+  <groupbox style="margin-top: 12px;">
+    <label value="Dependencies" style="font-weight: bold;" />
+    <description style="margin-top: 5px; font-size: 0.9em; color: gray;">
+      For Python mode, install: pip install faster-whisper pymupdf
+    </description>
+  </groupbox>
+
   <script>
     <![CDATA[
       "use strict";
@@ -270,92 +357,5 @@
       mvLog("preferences script loaded, readyState=" + document.readyState);
     ]]>
   </script>
-
-  <groupbox>
-    <label value="Transcription" style="font-weight: bold;" />
-
-    <hbox class="mv-row" align="center">
-      <html:label for="marginalvoice-transcriptionMode">Mode:</html:label>
-      <menulist id="marginalvoice-transcriptionMode" oncommand="savePrefs()">
-        <menupopup>
-          <menuitem value="python" label="Python Script (faster-whisper)" />
-          <menuitem value="custom" label="Custom Command" />
-        </menupopup>
-      </menulist>
-    </hbox>
-
-    <hbox class="mv-row" align="center">
-      <html:label for="marginalvoice-pythonPath">Python Path (optional):</html:label>
-      <html:input type="text" id="marginalvoice-pythonPath" style="width: 300px;" onchange="savePrefs()" />
-    </hbox>
-
-    <hbox class="mv-row" align="center">
-      <html:label for="marginalvoice-helperScriptPath">Helper Script Path (optional):</html:label>
-      <html:input type="text" id="marginalvoice-helperScriptPath" style="width: 300px;" onchange="savePrefs()" />
-    </hbox>
-
-    <hbox class="mv-row" align="center">
-      <html:label for="marginalvoice-customCommandPath">Custom Command Path:</html:label>
-      <html:input type="text" id="marginalvoice-customCommandPath" style="width: 300px;" onchange="savePrefs()" />
-    </hbox>
-
-    <hbox class="mv-row" align="center">
-      <html:label for="marginalvoice-customCommandArgs">Custom Command Args (use {audio}):</html:label>
-      <html:input type="text" id="marginalvoice-customCommandArgs" style="width: 300px;" onchange="savePrefs()" />
-    </hbox>
-
-    <hbox class="mv-row" align="center">
-      <html:label for="marginalvoice-whisperModel">Whisper Model:</html:label>
-      <html:input type="text" id="marginalvoice-whisperModel" style="width: 120px;" onchange="savePrefs()" />
-    </hbox>
-  </groupbox>
-
-  <groupbox style="margin-top: 12px;">
-    <label value="Trigger Words &amp; Colors" style="font-weight: bold;" />
-
-    <description style="margin: 5px 0; font-size: 0.9em; color: gray;">
-      Say a trigger phrase followed by the text you want highlighted.
-    </description>
-
-    <vbox id="marginalvoice-triggers-list" style="margin: 8px 0;">
-    </vbox>
-
-    <hbox style="margin-top: 8px;">
-      <button label="+ Add Trigger" oncommand="addTriggerRow()" />
-      <button label="Reset Defaults" oncommand="resetDefaults()" style="margin-left: 8px;" />
-    </hbox>
-  </groupbox>
-
-  <groupbox style="margin-top: 12px;">
-    <label value="Annotation Behavior" style="font-weight: bold;" />
-
-    <hbox class="mv-row" align="center">
-      <html:label for="marginalvoice-silenceTimeout">Silence Timeout (seconds):</html:label>
-      <html:input type="number" id="marginalvoice-silenceTimeout" style="width: 80px;" min="1" max="60" onchange="savePrefs()" />
-    </hbox>
-
-    <hbox class="mv-row" align="center">
-      <html:label for="marginalvoice-logLevel">Log Level:</html:label>
-      <menulist id="marginalvoice-logLevel" oncommand="savePrefs()">
-        <menupopup>
-          <menuitem value="debug" label="Debug" />
-          <menuitem value="info" label="Info" />
-          <menuitem value="warn" label="Warn" />
-          <menuitem value="error" label="Error" />
-        </menupopup>
-      </menulist>
-    </hbox>
-
-    <hbox class="mv-row" align="center">
-      <checkbox id="marginalvoice-skipDuplicates" label="Skip duplicate annotations" oncommand="savePrefs()" />
-    </hbox>
-  </groupbox>
-
-  <groupbox style="margin-top: 12px;">
-    <label value="Dependencies" style="font-weight: bold;" />
-    <description style="margin-top: 5px; font-size: 0.9em; color: gray;">
-      For Python mode, install: pip install faster-whisper pymupdf
-    </description>
-  </groupbox>
 
 </vbox>

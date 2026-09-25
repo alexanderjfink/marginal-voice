@@ -308,10 +308,10 @@ const MarginalVoice = {
     this.log("info", `Found ${segments.length} valid quote segments`);
 
     // Process each segment
-    const skipDuplicates = Zotero.Prefs.get("extensions.marginalvoice.skipDuplicates") !== false;
+    const appendToExisting = Zotero.Prefs.get("extensions.marginalvoice.skipDuplicates") !== false;
 
     let createdCount = 0;
-    let skippedCount = 0;
+    let appendedCount = 0;
     const warnings = [];
 
     for (const segment of segments) {
@@ -326,10 +326,12 @@ const MarginalVoice = {
 
         const commentary = segment.commentary || match.commentary || "";
 
-        // Check for duplicates
-        if (skipDuplicates && await this.isDuplicate(pdfItem, match.sentence, match)) {
-          skippedCount++;
-          this.log("info", "Skipping duplicate annotation:", match.sentence);
+        // Check for an existing highlight of the same sentence
+        const existingAnnotation = appendToExisting ? await this.findExistingAnnotation(pdfItem, match.sentence, match) : null;
+        if (existingAnnotation) {
+          await this.appendCommentaryToAnnotation(existingAnnotation, commentary);
+          appendedCount++;
+          this.log("info", "Appended commentary to existing annotation:", match.sentence);
           continue;
         }
 
@@ -342,7 +344,7 @@ const MarginalVoice = {
       }
     }
 
-    this.log("info", `Created ${createdCount} annotations, skipped ${skippedCount} duplicates`);
+    this.log("info", `Created ${createdCount} annotations, appended to ${appendedCount} existing annotations`);
     if (warnings.length > 0) {
       this.log("warn", "Warnings:", warnings);
     }
@@ -910,7 +912,7 @@ const MarginalVoice = {
     }
   },
 
-  async isDuplicate(pdfItem, text, position) {
+  async findExistingAnnotation(pdfItem, text, position) {
     const annotations = pdfItem.getAnnotations();
     for (const ann of annotations) {
       if (ann.annotationType !== "highlight") continue;
@@ -921,16 +923,28 @@ const MarginalVoice = {
         try {
           const annPos = JSON.parse(ann.annotationPosition || "{}");
           if (annPos.pageIndex === position.pageIndex) {
-            // Consider it a duplicate if same text and same page
-            return true;
+            return ann;
           }
         } catch {
           // If position parsing fails, fall back to text-only
-          return true;
+          return ann;
         }
       }
     }
-    return false;
+    return null;
+  },
+
+  async appendCommentaryToAnnotation(annotation, commentary) {
+    if (!commentary) return;
+    try {
+      const existingComment = annotation.annotationComment || "";
+      const separator = existingComment ? "\n\n" : "";
+      annotation.annotationComment = existingComment + separator + commentary;
+      await annotation.saveTx();
+    } catch (err) {
+      this.log("error", "Failed to append commentary to annotation:", err);
+      throw err;
+    }
   },
 
   normalizeText(text) {
