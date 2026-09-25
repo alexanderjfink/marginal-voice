@@ -1,0 +1,11 @@
+pref("extensions.marginalvoice.transcriptionMode", "python");
+pref("extensions.marginalvoice.pythonPath", "");
+pref("extensions.marginalvoice.helperScriptPath", "");
+pref("extensions.marginalvoice.customCommandPath", "");
+pref("extensions.marginalvoice.customCommandArgs", "");
+pref("extensions.marginalvoice.whisperModel", "base");
+pref("extensions.marginalvoice.triggerWord", "quote");
+pref("extensions.marginalvoice.fuzzyThreshold", "0.6");
+pref("extensions.marginalvoice.annotationColor", "#ffd400");
+pref("extensions.marginalvoice.skipDuplicates", true);
+pref("extensions.marginalvoice.logLevel", "info");

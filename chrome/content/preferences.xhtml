@@ -1,0 +1,108 @@
+<vbox
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  xmlns:html="http://www.w3.org/1999/xhtml"
+  id="marginalvoice-preferences"
+  style="padding: 16px; min-width: 500px;"
+>
+  <html:style>
+    #marginalvoice-preferences .aa-row {
+      margin: 8px 0;
+      align-items: center;
+    }
+    #marginalvoice-preferences html|label {
+      display: inline-block;
+      width: 220px;
+      font-weight: 600;
+    }
+    #marginalvoice-preferences html|input,
+    #marginalvoice-preferences html|select {
+      padding: 4px 6px;
+      border: 1px solid #999;
+      border-radius: 3px;
+      background: #fff;
+      color: #000;
+    }
+  </html:style>
+
+  <groupbox>
+    <label value="Transcription" style="font-weight: bold;" />
+
+    <hbox class="aa-row" align="center">
+      <html:label for="marginalvoice-transcriptionMode">Mode:</html:label>
+      <menulist id="marginalvoice-transcriptionMode" oncommand="savePrefs()">
+        <menupopup>
+          <menuitem value="python" label="Python Script (faster-whisper)" />
+          <menuitem value="custom" label="Custom Command" />
+        </menupopup>
+      </menulist>
+    </hbox>
+
+    <hbox class="aa-row" align="center">
+      <html:label for="marginalvoice-pythonPath">Python Path (optional):</html:label>
+      <html:input type="text" id="marginalvoice-pythonPath" style="width: 300px;" onchange="savePrefs()" />
+    </hbox>
+
+    <hbox class="aa-row" align="center">
+      <html:label for="marginalvoice-helperScriptPath">Helper Script Path (optional):</html:label>
+      <html:input type="text" id="marginalvoice-helperScriptPath" style="width: 300px;" onchange="savePrefs()" />
+    </hbox>
+
+    <hbox class="aa-row" align="center">
+      <html:label for="marginalvoice-customCommandPath">Custom Command Path:</html:label>
+      <html:input type="text" id="marginalvoice-customCommandPath" style="width: 300px;" onchange="savePrefs()" />
+    </hbox>
+
+    <hbox class="aa-row" align="center">
+      <html:label for="marginalvoice-customCommandArgs">Custom Command Args (use {audio}):</html:label>
+      <html:input type="text" id="marginalvoice-customCommandArgs" style="width: 300px;" onchange="savePrefs()" />
+    </hbox>
+
+    <hbox class="aa-row" align="center">
+      <html:label for="marginalvoice-whisperModel">Whisper Model:</html:label>
+      <html:input type="text" id="marginalvoice-whisperModel" style="width: 120px;" onchange="savePrefs()" />
+    </hbox>
+  </groupbox>
+
+  <groupbox style="margin-top: 12px;">
+    <label value="Annotation Behavior" style="font-weight: bold;" />
+
+    <hbox class="aa-row" align="center">
+      <html:label for="marginalvoice-triggerWord">Trigger Word:</html:label>
+      <html:input type="text" id="marginalvoice-triggerWord" style="width: 120px;" onchange="savePrefs()" />
+    </hbox>
+
+    <hbox class="aa-row" align="center">
+      <html:label for="marginalvoice-fuzzyThreshold">Fuzzy Match Threshold:</html:label>
+      <html:input type="text" id="marginalvoice-fuzzyThreshold" style="width: 60px;" onchange="savePrefs()" />
+    </hbox>
+
+    <hbox class="aa-row" align="center">
+      <html:label for="marginalvoice-annotationColor">Highlight Color:</html:label>
+      <html:input type="text" id="marginalvoice-annotationColor" style="width: 80px;" onchange="savePrefs()" />
+    </hbox>
+
+    <hbox class="aa-row" align="center">
+      <html:label for="marginalvoice-logLevel">Log Level:</html:label>
+      <menulist id="marginalvoice-logLevel" oncommand="savePrefs()">
+        <menupopup>
+          <menuitem value="debug" label="Debug" />
+          <menuitem value="info" label="Info" />
+          <menuitem value="warn" label="Warn" />
+          <menuitem value="error" label="Error" />
+        </menupopup>
+      </menulist>
+    </hbox>
+
+    <hbox class="aa-row" align="center">
+      <checkbox id="marginalvoice-skipDuplicates" label="Skip duplicate annotations" oncommand="savePrefs()" />
+    </hbox>
+  </groupbox>
+
+  <groupbox style="margin-top: 12px;">
+    <label value="Dependencies" style="font-weight: bold;" />
+    <description style="margin-top: 5px; font-size: 0.9em; color: gray;">
+      For Python mode, install: pip install faster-whisper pymupdf
+    </description>
+  </groupbox>
+
+</vbox>

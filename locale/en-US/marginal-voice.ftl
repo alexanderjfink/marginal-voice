@@ -1,0 +1,19 @@
+marginal-voice-preferences-title = Marginal Voice Settings
+marginal-voice-transcription-mode = Transcription Mode
+marginal-voice-transcription-mode-python = Python Script (faster-whisper)
+marginal-voice-transcription-mode-custom = Custom Command
+marginal-voice-python-path = Python Executable Path
+marginal-voice-python-path-help = Leave empty to use system python3/python
+marginal-voice-helper-script-path = Helper Script Path
+marginal-voice-helper-script-path-help = Leave empty to use bundled script
+marginal-voice-custom-command-path = Custom Command Path
+marginal-voice-custom-command-args = Custom Command Arguments
+marginal-voice-custom-command-args-help = Use {audio} as placeholder for audio file path
+marginal-voice-whisper-model = Whisper Model
+marginal-voice-whisper-model-help = e.g., tiny, base, small, medium, large
+marginal-voice-trigger-word = Trigger Word
+marginal-voice-trigger-word-help = Word spoken before a quote (default: quote)
+marginal-voice-fuzzy-threshold = Fuzzy Match Threshold
+marginal-voice-fuzzy-threshold-help = 0.0-1.0 (higher = stricter matching)
+marginal-voice-annotation-color = Annotation Color
+marginal-voice-skip-duplicates = Skip Duplicate Annotations
