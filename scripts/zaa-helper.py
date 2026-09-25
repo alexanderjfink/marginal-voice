@@ -147,8 +147,12 @@ def find_quote_in_words(words, quote_text, page_hint=None):
         for i in range(len(search_words) - count + 1):
             candidate = search_words[i:i + count]
             if all(words_match(probe[j], candidate[j]["normalized"]) for j in range(count)):
-                # Found match; expand to sentence
-                expanded = expand_to_sentence(words, i, count)
+                # Short matches (titles, single terms) should not expand into the
+                # following sentence when the title lacks ending punctuation.
+                if count <= 3:
+                    expanded = match_from_words(words, i, count)
+                else:
+                    expanded = expand_to_sentence(words, i, count)
                 if expanded and (best_match is None or count > best_matched_count):
                     best_match = expanded
                     best_matched_count = count
@@ -187,6 +191,23 @@ def merge_word_rects(word_rects):
             current = list(r)
     merged.append([round(x, 2) for x in current])
     return merged
+
+
+def match_from_words(words, match_start, match_count):
+    """Return a result dict for exactly the matched words without expanding."""
+    matched = words[match_start:match_start + match_count]
+    if not matched:
+        return None
+    word_rects = [w["rect"] for w in matched]
+    merged_rects = merge_word_rects(word_rects)
+    page = matched[0]["page"]
+    return {
+        "sentence": " ".join(w["text"] for w in matched),
+        "pageIndex": page,
+        "pageLabel": str(page + 1),
+        "rects": merged_rects,
+        "matched_words": match_count
+    }
 
 
 def expand_to_sentence(words, match_start, match_count):

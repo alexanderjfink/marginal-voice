@@ -28,9 +28,16 @@ const MarginalVoice = {
   getTriggers() {
     try {
       const raw = Zotero.Prefs.get("extensions.marginalvoice.triggers", true);
-      if (!raw) return this.defaultTriggers;
+      if (!raw) {
+        this.log("debug", "No triggers pref set; using defaults");
+        return this.defaultTriggers;
+      }
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        this.log("debug", "Loaded triggers:", JSON.stringify(parsed));
+        return parsed;
+      }
+      this.log("debug", "Triggers pref empty or invalid; using defaults");
       return this.defaultTriggers;
     } catch (e) {
       this.log("error", "Failed to parse triggers preference, using defaults:", e);
@@ -360,6 +367,8 @@ const MarginalVoice = {
 
     for (const segment of segments) {
       try {
+        this.log("info", `Segment for trigger '${segment.trigger}': initial quote='${segment.quoteCandidate}', commentary='${segment.commentary}'`);
+
         // Match quote in PDF and get exact position
         const match = await this.matchQuoteInPDF(pdfPath, segment.quoteCandidate);
         if (!match) {
@@ -367,11 +376,13 @@ const MarginalVoice = {
           this.log("warn", "No match for quote:", segment.quoteCandidate);
           continue;
         }
+        this.log("info", `PDF match: sentence='${match.sentence}', matched_words=${match.matched_words}, page=${match.pageIndex}`);
 
         // Expand the quote if the user continued reading the matched sentence.
         const expanded = this.expandQuoteToSpokenWords(segment, match);
         const quoteCandidate = expanded.quoteCandidate;
         const commentary = expanded.commentary || match.commentary || "";
+        this.log("info", `After expansion: quote='${quoteCandidate}', commentary='${commentary}'`);
 
         // Re-match with the expanded quote to get the full sentence/rects
         const finalMatch = quoteCandidate !== segment.quoteCandidate
@@ -713,6 +724,8 @@ const MarginalVoice = {
       .filter(t => t.words.length > 0)
       .sort((a, b) => b.words.length - a.words.length);
 
+    this.log("debug", "Looking for triggers:", sortedTriggers.map(t => t.phrase).join(", "));
+
     const used = new Array(wordList.length).fill(false);
 
     for (let i = 0; i < wordList.length; i++) {
@@ -739,6 +752,7 @@ const MarginalVoice = {
             phrase: trigger.phrase,
             color: trigger.color || this.colors.yellow
           });
+          this.log("debug", `Found trigger '${trigger.phrase}' at word ${i}`);
           // Skip past this trigger; do not check other triggers at same start position
           i = endIndex - 1;
           break;
@@ -746,6 +760,7 @@ const MarginalVoice = {
       }
     }
 
+    this.log("info", `Found ${occurrences.length} trigger occurrence(s)`);
     return occurrences.sort((a, b) => a.startWordIndex - b.startWordIndex);
   },
 
