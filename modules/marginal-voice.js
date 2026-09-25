@@ -199,10 +199,11 @@ const MarginalVoice = {
 
     itemMenu.appendChild(menu);
 
-    // Show/hide menu based on selection
+    // Show/hide menu based on selection (audio attachments or parents with audio attachments)
     itemMenu.addEventListener("popupshowing", () => {
       const items = window.ZoteroPane.getSelectedItems();
-      const hasAudio = items.some(item => this.isAudioAttachment(item));
+      const audioItems = this.getAudioAttachmentsFromItems(items);
+      const hasAudio = audioItems.length > 0;
       menu.hidden = !hasAudio;
       sep.hidden = !hasAudio;
     });
@@ -241,9 +242,34 @@ const MarginalVoice = {
     return Zotero.Items.get(attachments).filter(att => att.isPDFAttachment());
   },
 
+  getAudioAttachmentsFromItems(items) {
+    const audioItems = [];
+    const seen = new Set();
+    for (const item of items) {
+      if (this.isAudioAttachment(item)) {
+        if (!seen.has(item.id)) {
+          audioItems.push(item);
+          seen.add(item.id);
+        }
+        continue;
+      }
+      // If a regular item is selected, include its audio attachments
+      if (item.isRegularItem && item.isRegularItem()) {
+        const attachments = Zotero.Items.get(item.getAttachments());
+        for (const att of attachments) {
+          if (this.isAudioAttachment(att) && !seen.has(att.id)) {
+            audioItems.push(att);
+            seen.add(att.id);
+          }
+        }
+      }
+    }
+    return audioItems;
+  },
+
   async handleTranscribeCommand(window, processAll) {
     const items = window.ZoteroPane.getSelectedItems();
-    const audioItems = items.filter(item => this.isAudioAttachment(item));
+    const audioItems = this.getAudioAttachmentsFromItems(items);
     if (audioItems.length === 0) {
       window.alert("No audio file selected.");
       return;
@@ -325,19 +351,27 @@ const MarginalVoice = {
           continue;
         }
 
-        const commentary = segment.commentary || match.commentary || "";
+        // Expand the quote if the user continued reading the matched sentence.
+        const expanded = this.expandQuoteToSpokenWords(segment, match);
+        const quoteCandidate = expanded.quoteCandidate;
+        const commentary = expanded.commentary || match.commentary || "";
+
+        // Re-match with the expanded quote to get the full sentence/rects
+        const finalMatch = quoteCandidate !== segment.quoteCandidate
+          ? (await this.matchQuoteInPDF(pdfPath, quoteCandidate)) || match
+          : match;
 
         // Check for an existing highlight of the same sentence
-        const existingAnnotation = appendToExisting ? await this.findExistingAnnotation(pdfItem, match.sentence, match) : null;
+        const existingAnnotation = appendToExisting ? await this.findExistingAnnotation(pdfItem, finalMatch.sentence, finalMatch) : null;
         if (existingAnnotation) {
           await this.appendCommentaryToAnnotation(existingAnnotation, commentary);
           appendedCount++;
-          this.log("info", "Appended commentary to existing annotation:", match.sentence);
+          this.log("info", "Appended commentary to existing annotation:", finalMatch.sentence);
           continue;
         }
 
         // Create annotation with the color associated with the matched trigger
-        await this.createHighlightAnnotation(pdfItem, match.sentence, commentary, match, segment.color);
+        await this.createHighlightAnnotation(pdfItem, finalMatch.sentence, commentary, finalMatch, segment.color);
         createdCount++;
       } catch (err) {
         this.log("error", "Error processing segment:", err);
@@ -612,7 +646,9 @@ const MarginalVoice = {
         trigger: current.phrase,
         color: current.color,
         quoteCandidate,
-        commentary
+        commentary,
+        words: segmentWords,
+        matchedCount: current.matchedCount
       });
     }
 
@@ -959,6 +995,61 @@ const MarginalVoice = {
 
   normalizeText(text) {
     return text.replace(/\s+/g, " ").trim().toLowerCase();
+  },
+
+  expandQuoteToSpokenWords(segment, match) {
+    // If we don't have the original spoken words, nothing to expand
+    if (!segment.words || segment.words.length === 0 || !segment.matchedCount) {
+      return { quoteCandidate: segment.quoteCandidate, commentary: segment.commentary };
+    }
+
+    const sentence = match.sentence || "";
+    if (!sentence) return { quoteCandidate: segment.quoteCandidate, commentary: segment.commentary };
+
+    // Build normalized sentence word list
+    const sentenceWords = sentence.split(/\s+/)
+      .map(w => this.normalizeWord(w))
+      .filter(w => w.length > 0);
+
+    // Starting from the initial match, keep expanding while the next spoken word
+    // is also the next expected word in the sentence.
+    let expandedCount = segment.matchedCount;
+    let sentenceIndex = 0;
+
+    // Find where the initial matched quote starts in the sentence
+    const initialQuoteWords = segment.words.slice(0, segment.matchedCount).map(w => w.normalized || this.normalizeWord(w.word));
+    for (let i = 0; i <= sentenceWords.length - initialQuoteWords.length; i++) {
+      let found = true;
+      for (let j = 0; j < initialQuoteWords.length; j++) {
+        if (sentenceWords[i + j] !== initialQuoteWords[j]) {
+          found = false;
+          break;
+        }
+      }
+      if (found) {
+        sentenceIndex = i + initialQuoteWords.length;
+        break;
+      }
+    }
+
+    // Expand as long as the next spoken word matches the next sentence word
+    while (expandedCount < segment.words.length && sentenceIndex < sentenceWords.length) {
+      const nextSpoken = segment.words[expandedCount].normalized || this.normalizeWord(segment.words[expandedCount].word);
+      if (nextSpoken === sentenceWords[sentenceIndex]) {
+        expandedCount++;
+        sentenceIndex++;
+      } else {
+        break;
+      }
+    }
+
+    const quoteWords = segment.words.slice(0, expandedCount);
+    const commentaryWords = segment.words.slice(expandedCount);
+
+    return {
+      quoteCandidate: quoteWords.map(w => w.word).join(" "),
+      commentary: commentaryWords.map(w => w.word).join(" ")
+    };
   },
 
   async createHighlightAnnotation(pdfItem, text, comment, position, color) {
