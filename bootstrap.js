@@ -37,6 +37,25 @@ async function startup({ id, version, resourceURI, rootURI }) {
       Zotero.MarginalVoice.onMainWindowLoad({ window: win });
     }
   });
+
+  // Watch for new windows
+  Services.wm.addListener({
+    onOpenWindow: (xulWin) => {
+      const domWin = xulWin.docShell.domWindow;
+      domWin.addEventListener("load", () => {
+        if (typeof Zotero.MarginalVoice !== "undefined" && domWin.location?.href?.includes("zoteroPane.xhtml")) {
+          Zotero.MarginalVoice.onMainWindowLoad({ window: domWin });
+        }
+      }, { once: true });
+    },
+    onCloseWindow: (xulWin) => {
+      const domWin = xulWin.docShell.domWindow;
+      if (typeof Zotero.MarginalVoice !== "undefined" && domWin.location?.href?.includes("zoteroPane.xhtml")) {
+        Zotero.MarginalVoice.onMainWindowUnload({ window: domWin });
+      }
+    },
+    onWindowTitleChange: () => {}
+  });
 }
 
 function shutdown({ id, version, resourceURI, rootURI }) {

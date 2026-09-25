@@ -167,6 +167,15 @@ const MarginalVoice = {
     const itemMenu = doc.getElementById("zotero-itemmenu");
     if (!itemMenu) return;
 
+    // Idempotent: remove any existing Marginal Voice menu items first
+    const existingIds = ["marginalvoice-separator", "marginalvoice-annotate-one", "marginalvoice-annotate-all"];
+    for (const id of existingIds) {
+      const existing = doc.getElementById(id);
+      if (existing && existing.parentNode) {
+        existing.parentNode.removeChild(existing);
+      }
+    }
+
     // Separator
     const sep = doc.createXULElement("menuseparator");
     sep.id = "marginalvoice-separator";
@@ -190,7 +199,7 @@ const MarginalVoice = {
     this.menuItems.push(annotateAll);
 
     // Show/hide based on selection
-    itemMenu.addEventListener("popupshowing", () => {
+    const onPopupShowing = () => {
       const items = window.ZoteroPane.getSelectedItems();
       const directAudio = items.filter(item => this.isAudioAttachment(item));
       const allAudio = this.getAudioAttachmentsFromItems(items);
@@ -201,7 +210,14 @@ const MarginalVoice = {
       annotateAll.hidden = !hasSourceWithAudio && directAudio.length <= 1;
       const anyVisible = !annotateOne.hidden || !annotateAll.hidden;
       sep.hidden = !anyVisible;
-    });
+    };
+
+    // Remove any previously attached listener to avoid duplicates on reload
+    if (itemMenu._mvPopupShowingHandler) {
+      itemMenu.removeEventListener("popupshowing", itemMenu._mvPopupShowingHandler);
+    }
+    itemMenu._mvPopupShowingHandler = onPopupShowing;
+    itemMenu.addEventListener("popupshowing", onPopupShowing);
   },
 
   unregisterMenus() {
@@ -271,6 +287,8 @@ const MarginalVoice = {
     }
 
     const toProcess = processAll ? audioItems : [audioItems[0]];
+    this.log("info", `Processing ${toProcess.length} audio file(s) (processAll=${processAll})`);
+
     const progress = new Zotero.ProgressWindow({ window });
     progress.changeHeadline("Marginal Voice");
     progress.show();
@@ -281,12 +299,15 @@ const MarginalVoice = {
 
     for (const audioItem of toProcess) {
       processed++;
-      const itemProgress = new progress.ItemProgress("audio", `Processing ${audioItem.getField("title") || "audio file"}...`);
+      const title = audioItem.getField("title") || "audio file";
+      this.log("info", `Starting audio ${processed}/${toProcess.length}: ${title}`);
+      const itemProgress = new progress.ItemProgress("audio", `Processing ${title}...`);
       try {
         await this.transcribeAndAnnotate(audioItem);
         itemProgress.setProgress(100);
         itemProgress.setText("Done");
         succeeded++;
+        this.log("info", `Finished audio ${processed}/${toProcess.length}: ${title}`);
       } catch (err) {
         this.log("error", "Failed to process audio:", err);
         itemProgress.setError();
@@ -296,6 +317,7 @@ const MarginalVoice = {
       }
     }
 
+    this.log("info", `Completed batch: ${succeeded} succeeded, ${failed} failed out of ${processed}`);
     progress.startCloseTimer(5000);
   },
 
@@ -995,6 +1017,13 @@ const MarginalVoice = {
   expandQuoteToSpokenWords(segment, match) {
     // If we don't have the original spoken words, nothing to expand
     if (!segment.words || segment.words.length === 0 || !segment.matchedCount) {
+      return { quoteCandidate: segment.quoteCandidate, commentary: segment.commentary };
+    }
+
+    // Only expand longer initial matches. Short matches (e.g., 1-3 word titles)
+    // are likely complete quotes on their own; expanding them often pulls in
+    // the next sentence when the title lacks ending punctuation.
+    if (segment.matchedCount < 4) {
       return { quoteCandidate: segment.quoteCandidate, commentary: segment.commentary };
     }
 
