@@ -18,6 +18,13 @@
       width: 220px;
       font-weight: 600;
     }
+    #marginalvoice-preferences html|input[type="text"],
+    #marginalvoice-preferences html|input[type="number"] {
+      padding: 4px 6px;
+      border: 1px solid #999;
+      border-radius: 3px;
+      font-size: 0.95em;
+    }
     #marginalvoice-preferences .mv-trigger-row {
       margin: 4px 0;
       align-items: center;
@@ -39,27 +46,27 @@
 
     <hbox class="mv-row" align="center">
       <html:label for="marginalvoice-pythonPath">Python Path (optional):</html:label>
-      <textbox id="marginalvoice-pythonPath" style="width: 300px;" onchange="MVPrefs.saveAllPrefs()" />
+      <html:input type="text" id="marginalvoice-pythonPath" style="width: 300px;" onchange="MVPrefs.saveAllPrefs()" />
     </hbox>
 
     <hbox class="mv-row" align="center">
       <html:label for="marginalvoice-helperScriptPath">Helper Script Path (optional):</html:label>
-      <textbox id="marginalvoice-helperScriptPath" style="width: 300px;" onchange="MVPrefs.saveAllPrefs()" />
+      <html:input type="text" id="marginalvoice-helperScriptPath" style="width: 300px;" onchange="MVPrefs.saveAllPrefs()" />
     </hbox>
 
     <hbox class="mv-row" align="center">
       <html:label for="marginalvoice-customCommandPath">Custom Command Path:</html:label>
-      <textbox id="marginalvoice-customCommandPath" style="width: 300px;" onchange="MVPrefs.saveAllPrefs()" />
+      <html:input type="text" id="marginalvoice-customCommandPath" style="width: 300px;" onchange="MVPrefs.saveAllPrefs()" />
     </hbox>
 
     <hbox class="mv-row" align="center">
       <html:label for="marginalvoice-customCommandArgs">Custom Command Args (use {audio}):</html:label>
-      <textbox id="marginalvoice-customCommandArgs" style="width: 300px;" onchange="MVPrefs.saveAllPrefs()" />
+      <html:input type="text" id="marginalvoice-customCommandArgs" style="width: 300px;" onchange="MVPrefs.saveAllPrefs()" />
     </hbox>
 
     <hbox class="mv-row" align="center">
       <html:label for="marginalvoice-whisperModel">Whisper Model:</html:label>
-      <textbox id="marginalvoice-whisperModel" style="width: 120px;" onchange="MVPrefs.saveAllPrefs()" />
+      <html:input type="text" id="marginalvoice-whisperModel" style="width: 120px;" onchange="MVPrefs.saveAllPrefs()" />
     </hbox>
   </groupbox>
 
@@ -84,7 +91,7 @@
 
     <hbox class="mv-row" align="center">
       <html:label for="marginalvoice-silenceTimeout">Silence Timeout (seconds):</html:label>
-      <textbox id="marginalvoice-silenceTimeout" type="number" style="width: 80px;" onchange="MVPrefs.saveAllPrefs()" />
+      <html:input type="number" id="marginalvoice-silenceTimeout" min="1" max="60" style="width: 80px;" onchange="MVPrefs.saveAllPrefs()" />
     </hbox>
 
     <hbox class="mv-row" align="center">
