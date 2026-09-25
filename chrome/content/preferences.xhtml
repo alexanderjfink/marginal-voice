@@ -5,7 +5,7 @@
   style="padding: 16px; min-width: 500px;"
 >
   <html:style>
-    #marginalvoice-preferences .aa-row {
+    #marginalvoice-preferences .mv-row {
       margin: 8px 0;
       align-items: center;
     }
@@ -15,12 +15,35 @@
       font-weight: 600;
     }
     #marginalvoice-preferences html|input,
-    #marginalvoice-preferences html|select {
+    #marginalvoice-preferences html|select,
+    #marginalvoice-preferences menulist {
       padding: 4px 6px;
       border: 1px solid #999;
       border-radius: 3px;
       background: #fff;
       color: #000;
+    }
+    #marginalvoice-preferences .mv-trigger-row {
+      margin: 4px 0;
+      align-items: center;
+    }
+    #marginalvoice-preferences .mv-trigger-row html|input {
+      width: 180px;
+    }
+    #marginalvoice-preferences .mv-trigger-row menulist {
+      width: 140px;
+      margin-left: 8px;
+    }
+    #marginalvoice-preferences .mv-trigger-row button {
+      margin-left: 8px;
+    }
+    #marginalvoice-preferences .mv-color-swatch {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 1px solid #666;
+      margin-right: 6px;
+      vertical-align: middle;
     }
   </html:style>
 
@@ -29,6 +52,22 @@
       "use strict";
 
       const MV_PREFIX = "extensions.marginalvoice.";
+
+      const MV_COLORS = [
+        { name: "Yellow", value: "#ffd400" },
+        { name: "Red", value: "#ff6666" },
+        { name: "Green", value: "#5fb236" },
+        { name: "Blue", value: "#2ea8e5" },
+        { name: "Purple", value: "#a28ae5" },
+        { name: "Orange", value: "#f19837" }
+      ];
+
+      const MV_DEFAULT_TRIGGERS = [
+        { phrase: "quote", color: "#ffd400" },
+        { phrase: "Main Theory", color: "#2ea8e5" },
+        { phrase: "Key Point", color: "#ff6666" },
+        { phrase: "Definition", color: "#5fb236" }
+      ];
 
       function _mvGet(key, fallback) {
         try {
@@ -67,6 +106,124 @@
         } catch (_) {}
       }
 
+      function getTriggers() {
+        try {
+          const raw = _mvGet("triggers", "");
+          if (!raw) return MV_DEFAULT_TRIGGERS.slice();
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+          return MV_DEFAULT_TRIGGERS.slice();
+        } catch (e) {
+          mvLog("getTriggers error: " + e);
+          return MV_DEFAULT_TRIGGERS.slice();
+        }
+      }
+
+      function saveTriggers(triggers) {
+        _mvSet("triggers", JSON.stringify(triggers));
+      }
+
+      function createXul(tag) {
+        return document.createElementNS("http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul", tag);
+      }
+
+      function createColorMenulist(selectedValue) {
+        const menulist = createXul("menulist");
+        const popup = createXul("menupopup");
+        for (const c of MV_COLORS) {
+          const item = createXul("menuitem");
+          item.setAttribute("value", c.value);
+          item.setAttribute("label", c.name);
+          item.setAttribute("style", "font-weight: normal;");
+          popup.appendChild(item);
+        }
+        menulist.appendChild(popup);
+        menulist.setAttribute("value", selectedValue || MV_COLORS[0].value);
+        menulist.addEventListener("command", savePrefs);
+        return menulist;
+      }
+
+      function renderTriggers() {
+        const container = document.getElementById("marginalvoice-triggers-list");
+        while (container.firstChild) {
+          container.removeChild(container.firstChild);
+        }
+
+        const triggers = getTriggers();
+        for (let i = 0; i < triggers.length; i++) {
+          const row = createXul("hbox");
+          row.setAttribute("class", "mv-trigger-row");
+          row.setAttribute("align", "center");
+
+          const input = document.createElementNS("http://www.w3.org/1999/xhtml", "input");
+          input.setAttribute("type", "text");
+          input.setAttribute("placeholder", "Trigger phrase");
+          input.value = triggers[i].phrase || "";
+          input.addEventListener("change", savePrefs);
+          row.appendChild(input);
+
+          const colorList = createColorMenulist(triggers[i].color);
+          row.appendChild(colorList);
+
+          const removeBtn = createXul("button");
+          removeBtn.setAttribute("label", "−");
+          removeBtn.addEventListener("command", function() {
+            if (row.parentNode) row.parentNode.removeChild(row);
+            savePrefs();
+          });
+          row.appendChild(removeBtn);
+
+          container.appendChild(row);
+        }
+      }
+
+      function collectTriggers() {
+        const container = document.getElementById("marginalvoice-triggers-list");
+        const triggers = [];
+        for (const row of container.children) {
+          const input = row.querySelector("input");
+          const colorList = row.querySelector("menulist");
+          const phrase = (input.value || "").trim();
+          if (phrase) {
+            triggers.push({ phrase, color: colorList.value });
+          }
+        }
+        return triggers;
+      }
+
+      function addTriggerRow() {
+        const container = document.getElementById("marginalvoice-triggers-list");
+        const row = createXul("hbox");
+        row.setAttribute("class", "mv-trigger-row");
+        row.setAttribute("align", "center");
+
+        const input = document.createElementNS("http://www.w3.org/1999/xhtml", "input");
+        input.setAttribute("type", "text");
+        input.setAttribute("placeholder", "Trigger phrase");
+        input.addEventListener("change", savePrefs);
+        row.appendChild(input);
+
+        const colorList = createColorMenulist(MV_COLORS[0].value);
+        row.appendChild(colorList);
+
+        const removeBtn = createXul("button");
+        removeBtn.setAttribute("label", "−");
+        removeBtn.addEventListener("command", function() {
+          if (row.parentNode) row.parentNode.removeChild(row);
+          savePrefs();
+        });
+        row.appendChild(removeBtn);
+
+        container.appendChild(row);
+        input.focus();
+      }
+
+      function resetDefaults() {
+        document.getElementById("marginalvoice-silenceTimeout").value = 5;
+        saveTriggers(MV_DEFAULT_TRIGGERS.slice());
+        renderTriggers();
+      }
+
       function loadPrefs() {
         mvLog("loadPrefs called");
         try {
@@ -76,11 +233,10 @@
           document.getElementById("marginalvoice-customCommandPath").value = _mvGet("customCommandPath", "");
           document.getElementById("marginalvoice-customCommandArgs").value = _mvGet("customCommandArgs", "");
           document.getElementById("marginalvoice-whisperModel").value = _mvGet("whisperModel", "base");
-          document.getElementById("marginalvoice-triggerWord").value = _mvGet("triggerWord", "quote");
-          document.getElementById("marginalvoice-fuzzyThreshold").value = _mvGet("fuzzyThreshold", "0.6");
-          document.getElementById("marginalvoice-annotationColor").value = _mvGet("annotationColor", "#ffd400");
+          document.getElementById("marginalvoice-silenceTimeout").value = _mvGet("silenceTimeout", 5);
           document.getElementById("marginalvoice-skipDuplicates").checked = _mvGet("skipDuplicates", true);
           document.getElementById("marginalvoice-logLevel").value = _mvGet("logLevel", "info");
+          renderTriggers();
           mvLog("loadPrefs done");
         } catch (e) {
           mvLog("loadPrefs error: " + e);
@@ -96,11 +252,10 @@
           _mvSet("customCommandPath", document.getElementById("marginalvoice-customCommandPath").value);
           _mvSet("customCommandArgs", document.getElementById("marginalvoice-customCommandArgs").value);
           _mvSet("whisperModel", document.getElementById("marginalvoice-whisperModel").value);
-          _mvSet("triggerWord", document.getElementById("marginalvoice-triggerWord").value);
-          _mvSet("fuzzyThreshold", document.getElementById("marginalvoice-fuzzyThreshold").value);
-          _mvSet("annotationColor", document.getElementById("marginalvoice-annotationColor").value);
+          _mvSet("silenceTimeout", parseInt(document.getElementById("marginalvoice-silenceTimeout").value, 10) || 5);
           _mvSet("skipDuplicates", document.getElementById("marginalvoice-skipDuplicates").checked);
           _mvSet("logLevel", document.getElementById("marginalvoice-logLevel").value);
+          saveTriggers(collectTriggers());
           mvLog("savePrefs done");
         } catch (e) {
           mvLog("savePrefs error: " + e);
@@ -119,7 +274,7 @@
   <groupbox>
     <label value="Transcription" style="font-weight: bold;" />
 
-    <hbox class="aa-row" align="center">
+    <hbox class="mv-row" align="center">
       <html:label for="marginalvoice-transcriptionMode">Mode:</html:label>
       <menulist id="marginalvoice-transcriptionMode" oncommand="savePrefs()">
         <menupopup>
@@ -129,51 +284,57 @@
       </menulist>
     </hbox>
 
-    <hbox class="aa-row" align="center">
+    <hbox class="mv-row" align="center">
       <html:label for="marginalvoice-pythonPath">Python Path (optional):</html:label>
       <html:input type="text" id="marginalvoice-pythonPath" style="width: 300px;" onchange="savePrefs()" />
     </hbox>
 
-    <hbox class="aa-row" align="center">
+    <hbox class="mv-row" align="center">
       <html:label for="marginalvoice-helperScriptPath">Helper Script Path (optional):</html:label>
       <html:input type="text" id="marginalvoice-helperScriptPath" style="width: 300px;" onchange="savePrefs()" />
     </hbox>
 
-    <hbox class="aa-row" align="center">
+    <hbox class="mv-row" align="center">
       <html:label for="marginalvoice-customCommandPath">Custom Command Path:</html:label>
       <html:input type="text" id="marginalvoice-customCommandPath" style="width: 300px;" onchange="savePrefs()" />
     </hbox>
 
-    <hbox class="aa-row" align="center">
+    <hbox class="mv-row" align="center">
       <html:label for="marginalvoice-customCommandArgs">Custom Command Args (use {audio}):</html:label>
       <html:input type="text" id="marginalvoice-customCommandArgs" style="width: 300px;" onchange="savePrefs()" />
     </hbox>
 
-    <hbox class="aa-row" align="center">
+    <hbox class="mv-row" align="center">
       <html:label for="marginalvoice-whisperModel">Whisper Model:</html:label>
       <html:input type="text" id="marginalvoice-whisperModel" style="width: 120px;" onchange="savePrefs()" />
     </hbox>
   </groupbox>
 
   <groupbox style="margin-top: 12px;">
+    <label value="Trigger Words &amp; Colors" style="font-weight: bold;" />
+
+    <description style="margin: 5px 0; font-size: 0.9em; color: gray;">
+      Say a trigger phrase followed by the text you want highlighted.
+    </description>
+
+    <vbox id="marginalvoice-triggers-list" style="margin: 8px 0;">
+    </vbox>
+
+    <hbox style="margin-top: 8px;">
+      <button label="+ Add Trigger" oncommand="addTriggerRow()" />
+      <button label="Reset Defaults" oncommand="resetDefaults()" style="margin-left: 8px;" />
+    </hbox>
+  </groupbox>
+
+  <groupbox style="margin-top: 12px;">
     <label value="Annotation Behavior" style="font-weight: bold;" />
 
-    <hbox class="aa-row" align="center">
-      <html:label for="marginalvoice-triggerWord">Trigger Word:</html:label>
-      <html:input type="text" id="marginalvoice-triggerWord" style="width: 120px;" onchange="savePrefs()" />
+    <hbox class="mv-row" align="center">
+      <html:label for="marginalvoice-silenceTimeout">Silence Timeout (seconds):</html:label>
+      <html:input type="number" id="marginalvoice-silenceTimeout" style="width: 80px;" min="1" max="60" onchange="savePrefs()" />
     </hbox>
 
-    <hbox class="aa-row" align="center">
-      <html:label for="marginalvoice-fuzzyThreshold">Fuzzy Match Threshold:</html:label>
-      <html:input type="text" id="marginalvoice-fuzzyThreshold" style="width: 60px;" onchange="savePrefs()" />
-    </hbox>
-
-    <hbox class="aa-row" align="center">
-      <html:label for="marginalvoice-annotationColor">Highlight Color:</html:label>
-      <html:input type="text" id="marginalvoice-annotationColor" style="width: 80px;" onchange="savePrefs()" />
-    </hbox>
-
-    <hbox class="aa-row" align="center">
+    <hbox class="mv-row" align="center">
       <html:label for="marginalvoice-logLevel">Log Level:</html:label>
       <menulist id="marginalvoice-logLevel" oncommand="savePrefs()">
         <menupopup>
@@ -185,7 +346,7 @@
       </menulist>
     </hbox>
 
-    <hbox class="aa-row" align="center">
+    <hbox class="mv-row" align="center">
       <checkbox id="marginalvoice-skipDuplicates" label="Skip duplicate annotations" oncommand="savePrefs()" />
     </hbox>
   </groupbox>

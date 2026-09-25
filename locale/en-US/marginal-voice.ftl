@@ -11,9 +11,9 @@ marginal-voice-custom-command-args = Custom Command Arguments
 marginal-voice-custom-command-args-help = Use {audio} as placeholder for audio file path
 marginal-voice-whisper-model = Whisper Model
 marginal-voice-whisper-model-help = e.g., tiny, base, small, medium, large
-marginal-voice-trigger-word = Trigger Word
-marginal-voice-trigger-word-help = Word spoken before a quote (default: quote)
-marginal-voice-fuzzy-threshold = Fuzzy Match Threshold
-marginal-voice-fuzzy-threshold-help = 0.0-1.0 (higher = stricter matching)
-marginal-voice-annotation-color = Annotation Color
+marginal-voice-triggers = Trigger Words & Colors
+marginal-voice-trigger-phrase = Trigger Phrase
+marginal-voice-trigger-color = Color
+marginal-voice-silence-timeout = Silence Timeout
+marginal-voice-silence-timeout-help = Seconds of silence before commentary ends
 marginal-voice-skip-duplicates = Skip Duplicate Annotations

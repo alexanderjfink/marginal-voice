@@ -20,6 +20,11 @@ import sys
 import tempfile
 
 
+def normalize_word(word):
+    """Lowercase and strip punctuation from a word."""
+    return re.sub(r"[^\w\-]", "", word).lower()
+
+
 def transcribe(args):
     try:
         from faster_whisper import WhisperModel
@@ -39,15 +44,38 @@ def transcribe(args):
             compute_type = "int8"
 
         model = WhisperModel(model_size, device=device, compute_type=compute_type)
-        segments, info = model.transcribe(args.audio, beam_size=5)
+        segments, info = model.transcribe(
+            args.audio,
+            beam_size=5,
+            word_timestamps=True
+        )
 
         texts = []
+        words = []
         for segment in segments:
             texts.append(segment.text)
+            segment_words = getattr(segment, "words", None)
+            if segment_words:
+                for w in segment_words:
+                    # Some versions return objects with .word, .start, .end
+                    # Others return tuples
+                    if isinstance(w, tuple):
+                        word_text, start, end = w[0], w[1], w[2]
+                    else:
+                        word_text, start, end = w.word, w.start, w.end
+                    clean = normalize_word(word_text)
+                    if clean:
+                        words.append({
+                            "word": word_text,
+                            "normalized": clean,
+                            "start": round(float(start), 3),
+                            "end": round(float(end), 3)
+                        })
 
         transcript = " ".join(texts).strip()
         write_output(args.output, {
             "text": transcript,
+            "words": words,
             "language": info.language,
             "duration": info.duration,
             "success": True

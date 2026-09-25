@@ -4,7 +4,14 @@ A Zotero plugin that transcribes audio recordings and turns spoken quotes into P
 
 ## What it does
 
-Marginal Voice listens to audio attachments in your Zotero library, transcribes them locally with OpenAI Whisper (via `faster-whisper`), and looks for spoken quotes triggered by a keyword. When it finds text in the attached PDF that matches what you said, it creates a yellow highlight annotation on the exact sentence and attaches your remaining spoken commentary as an annotation note.
+Marginal Voice listens to audio attachments in your Zotero library, transcribes them locally with OpenAI Whisper (via `faster-whisper`), and looks for spoken quotes triggered by a keyword or phrase. When it finds text in the attached PDF that matches what you said, it creates a colored highlight annotation on the exact sentence and attaches your remaining spoken commentary as an annotation note.
+
+You can define multiple trigger phrases, each with its own highlight color. For example:
+
+- `quote` → yellow
+- `Main Theory` → blue
+- `Key Point` → red
+- `Definition` → green
 
 ## Installation
 
@@ -32,38 +39,41 @@ Marginal Voice listens to audio attachments in your Zotero library, transcribes 
 3. Choose **Marginal Voice → Transcribe and Annotate** to process the selected audio, or **Transcribe and Annotate All Audio** to process every audio attachment on the parent item.
 
 4. The plugin will:
-   - Transcribe the audio locally.
-   - Detect each time you say the trigger word (default: `quote`).
+   - Transcribe the audio locally, capturing word-level timestamps.
+   - Detect each time you say a configured trigger phrase.
    - Try to match the next 4-6 words against the PDF text, with tolerance for hyphenation differences.
    - Expand the match to the full sentence in the PDF.
-   - Create a highlight annotation on that sentence.
+   - Create a highlight annotation on that sentence using the trigger's color.
    - Attach everything you said after the matched words as a note on the annotation.
+   - End the current annotation if a long silence (longer than the configured timeout) is detected.
 
 ### Example
 
 If you say:
 
-> "Quote the EU has adopted a comprehensive regulatory framework and I'm thinking about how this will affect member states."
+> "Main Theory the EU has adopted a comprehensive regulatory framework and I'm thinking about how this will affect member states."
 
 And the PDF contains the sentence:
 
 > "The EU has adopted a comprehensive regulatory framework."
 
 Marginal Voice will:
-- Highlight that full sentence in the PDF.
+- Highlight that full sentence in **blue**.
 - Attach a note reading: "and I'm thinking about how this will affect member states."
 
-### Trigger word behavior
+### Trigger phrase behavior
 
-The trigger word is only treated as a keyword when the words immediately after it match text in the PDF. If you say the trigger word in passing and the following words don't match anything, it is ignored. This lets you talk naturally about quotes without every casual use of the word creating an annotation.
+A trigger phrase is only treated as a keyword when the words immediately after it match text in the PDF. If you say a trigger phrase in passing and the following words don't match anything, it is ignored. This lets you talk naturally without every casual use of the word creating an annotation.
+
+Multi-word triggers such as "Main Theory" or "Key Point" are supported.
 
 ## Configuration
 
 Open **Zotero Preferences → Marginal Voice** to change:
 
-- **Trigger Word**: the spoken keyword that starts a quote (default: `quote`).
+- **Trigger Words &amp; Colors**: add, remove, or edit trigger phrases and assign each a highlight color. Defaults are `quote` (yellow), `Main Theory` (blue), `Key Point` (red), and `Definition` (green).
+- **Silence Timeout**: maximum silence gap (in seconds) before a spoken annotation commentary is cut off. Requires Python transcription mode with word timestamps.
 - **Whisper Model**: transcription model size (`tiny`, `base`, `small`, `medium`, `large`); larger is more accurate but slower.
-- **Highlight Color**: hex color for created annotations (default: `#ffd400`, Zotero yellow).
 - **Python Path**: path to the Python interpreter if Zotero doesn't use the right one.
 - **Log Level**: how much detail to write to the Zotero debug log.
 
@@ -77,16 +87,6 @@ cd marginal-voice
 The output is `marginal-voice-1.0.0.xpi` in the project root.
 
 ## Roadmap
-
-### Custom labels and colors
-
-Currently every annotation uses a single trigger word and a single highlight color. The next step is to support **multiple labeled triggers**, each with its own color. For example:
-
-- Saying `"claim ..."` creates a green highlight.
-- Saying `"evidence ..."` creates a blue highlight.
-- Saying `"question ..."` creates a red highlight.
-
-This will let you categorize annotations by voice while you read, rather than manually changing colors afterward.
 
 ### Live annotation
 

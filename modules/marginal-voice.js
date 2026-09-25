@@ -8,6 +8,46 @@ const MarginalVoice = {
   rootURI: null,
   menuItems: [],
 
+  // Zotero's standard annotation highlight colors
+  colors: {
+    yellow: "#ffd400",
+    red: "#ff6666",
+    green: "#5fb236",
+    blue: "#2ea8e5",
+    purple: "#a28ae5",
+    orange: "#f19837"
+  },
+
+  defaultTriggers: [
+    { phrase: "quote", color: "#ffd400" },
+    { phrase: "Main Theory", color: "#2ea8e5" },
+    { phrase: "Key Point", color: "#ff6666" },
+    { phrase: "Definition", color: "#5fb236" }
+  ],
+
+  getTriggers() {
+    try {
+      const raw = Zotero.Prefs.get("extensions.marginalvoice.triggers");
+      if (!raw) return this.defaultTriggers;
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      return this.defaultTriggers;
+    } catch (e) {
+      this.log("error", "Failed to parse triggers preference, using defaults:", e);
+      return this.defaultTriggers;
+    }
+  },
+
+  getSilenceTimeout() {
+    try {
+      const val = Zotero.Prefs.get("extensions.marginalvoice.silenceTimeout");
+      const num = Number(val);
+      return Number.isFinite(num) && num > 0 ? num : 5;
+    } catch (e) {
+      return 5;
+    }
+  },
+
   formatLogArg(a) {
     if (a && (a.message || a.stack)) {
       const parts = [];
@@ -252,18 +292,23 @@ const MarginalVoice = {
 
     // Transcribe audio
     this.log("info", "Transcribing:", audioPath);
-    const transcript = await this.transcribeAudio(audioPath);
-    this.log("info", "Transcript:", transcript);
+    const transcription = await this.transcribeAudio(audioPath);
+    const transcriptText = typeof transcription === "object" && transcription.text ? transcription.text : String(transcription);
+    const transcriptWords = (typeof transcription === "object" && Array.isArray(transcription.words)) ? transcription.words : null;
+    this.log("info", "Transcript:", transcriptText);
+    if (transcriptWords) {
+      this.log("debug", "Word timestamps:", transcriptWords.length, "words");
+    }
 
-    // Find quote segments, only treating "quote" as a keyword when the
+    // Find quote segments. Only treat a trigger phrase as a keyword when the
     // words immediately following it actually match text in the PDF.
-    const triggerWord = (Zotero.Prefs.get("extensions.marginalvoice.triggerWord") || "quote").toLowerCase().trim();
-    const segments = await this.findQuoteSegments(transcript, triggerWord, pdfPath);
+    const triggers = this.getTriggers();
+    const silenceTimeout = this.getSilenceTimeout();
+    const segments = await this.findQuoteSegments(transcriptText, triggers, pdfPath, transcriptWords, silenceTimeout);
     this.log("info", `Found ${segments.length} valid quote segments`);
 
     // Process each segment
     const skipDuplicates = Zotero.Prefs.get("extensions.marginalvoice.skipDuplicates") !== false;
-    const color = Zotero.Prefs.get("extensions.marginalvoice.annotationColor") || "#ffd400";
 
     let createdCount = 0;
     let skippedCount = 0;
@@ -279,7 +324,7 @@ const MarginalVoice = {
           continue;
         }
 
-        const commentary = match.commentary || segment.commentary || "";
+        const commentary = segment.commentary || match.commentary || "";
 
         // Check for duplicates
         if (skipDuplicates && await this.isDuplicate(pdfItem, match.sentence, match)) {
@@ -288,8 +333,8 @@ const MarginalVoice = {
           continue;
         }
 
-        // Create annotation
-        await this.createHighlightAnnotation(pdfItem, match.sentence, commentary, match, color);
+        // Create annotation with the color associated with the matched trigger
+        await this.createHighlightAnnotation(pdfItem, match.sentence, commentary, match, segment.color);
         createdCount++;
       } catch (err) {
         this.log("error", "Error processing segment:", err);
@@ -337,7 +382,12 @@ const MarginalVoice = {
       this.log("error", "Transcription helper reported error:", json.error);
       throw new Error(json.error);
     }
-    return json.text || "";
+    return {
+      text: json.text || "",
+      words: json.words || null,
+      language: json.language,
+      duration: json.duration
+    };
   },
 
   async transcribeWithCustomCommand(audioPath) {
@@ -359,11 +409,15 @@ const MarginalVoice = {
 
     try {
       const json = JSON.parse(output);
-      if (json.text !== undefined) return json.text;
-      if (json.transcript !== undefined) return json.transcript;
-      return output.trim();
+      if (json.text !== undefined) {
+        return { text: json.text, words: json.words || null };
+      }
+      if (json.transcript !== undefined) {
+        return { text: json.transcript, words: json.words || null };
+      }
+      return { text: output.trim(), words: null };
     } catch {
-      return output.trim();
+      return { text: output.trim(), words: null };
     }
   },
 
@@ -482,42 +536,29 @@ const MarginalVoice = {
     return this.helperScriptTempPath;
   },
 
-  async findQuoteSegments(transcript, triggerWord, pdfPath) {
-    const lowerTranscript = transcript.toLowerCase();
-    const lowerTrigger = triggerWord.toLowerCase();
+  async findQuoteSegments(transcript, triggers, pdfPath, words, silenceTimeout) {
+    // Build word list from transcript if timestamps weren't provided
+    const wordList = this.buildWordList(transcript, words);
+    if (wordList.length === 0) return [];
 
-    // First pass: find all trigger positions and test whether each one matches.
-    const triggers = [];
-    let searchIndex = 0;
-    while (true) {
-      const triggerIndex = lowerTranscript.indexOf(lowerTrigger, searchIndex);
-      if (triggerIndex === -1) break;
+    // Find all trigger occurrences. Prefer longer triggers and earlier positions.
+    const occurrences = this.findTriggerOccurrences(wordList, triggers);
 
-      const afterTrigger = triggerIndex + lowerTrigger.length;
-      let contentStart = afterTrigger;
-      while (contentStart < transcript.length && /[\s,;:]/.test(transcript[contentStart])) {
-        contentStart++;
-      }
+    // First pass: test each trigger occurrence against the PDF to find valid ones.
+    const candidateSegments = [];
+    for (const occ of occurrences) {
+      const contentWords = wordList.slice(occ.endWordIndex);
+      const maxWords = Math.min(6, contentWords.length);
+      const minWords = Math.min(4, contentWords.length);
 
-      // Find the end of this segment (next trigger or end of transcript)
-      const nextTrigger = lowerTranscript.indexOf(lowerTrigger, contentStart);
-      const contentEnd = nextTrigger === -1 ? transcript.length : nextTrigger;
-      const rawContent = transcript.substring(contentStart, contentEnd).trim();
+      if (maxWords < minWords || minWords < 1) continue;
 
-      if (!rawContent) {
-        searchIndex = afterTrigger + 1;
-        continue;
-      }
-
-      const words = rawContent.split(/\s+/).filter(w => w.length > 0);
-      const maxWords = Math.min(6, words.length);
-      const minWords = Math.min(4, words.length);
-
-      this.log("info", `Trigger at ${triggerIndex}: raw='${rawContent.substring(0, 60)}...', trying ${minWords}-${maxWords} words`);
+      this.log("info", `Trigger '${occ.phrase}' at word ${occ.startWordIndex}: trying ${minWords}-${maxWords} words`);
 
       let matchedCount = 0;
       for (let count = maxWords; count >= minWords; count--) {
-        const probe = words.slice(0, count).join(" ");
+        const probeWords = contentWords.slice(0, count);
+        const probe = probeWords.map(w => w.word).join(" ");
         const match = await this.matchQuoteInPDF(pdfPath, probe);
         if (match) {
           matchedCount = count;
@@ -526,46 +567,130 @@ const MarginalVoice = {
         }
       }
 
-      triggers.push({
-        triggerIndex,
-        contentStart,
-        contentEnd,
-        rawContent,
+      candidateSegments.push({
+        startWordIndex: occ.startWordIndex,
+        endWordIndex: occ.endWordIndex,
+        phrase: occ.phrase,
+        color: occ.color,
+        contentWords,
         matchedCount,
         valid: matchedCount > 0
       });
-
-      searchIndex = contentEnd;
     }
 
-    // Second pass: build segments only from valid triggers.
-    // Commentary extends to the next valid trigger, not just the next trigger word.
-    const validTriggers = triggers.filter(t => t.valid);
-    const segments = [];
+    const validSegments = candidateSegments.filter(s => s.valid);
 
-    for (let i = 0; i < validTriggers.length; i++) {
-      const t = validTriggers[i];
-      const segmentEnd = (i + 1 < validTriggers.length) ? validTriggers[i + 1].triggerIndex : transcript.length;
-      const fullContent = transcript.substring(t.contentStart, segmentEnd).trim();
-      const words = fullContent.split(/\s+/).filter(w => w.length > 0);
-      const quoteCandidate = words.slice(0, t.matchedCount).join(" ");
-      const commentary = words.slice(t.matchedCount).join(" ");
+    // Second pass: determine segment boundaries considering next trigger and silence gaps.
+    const finalSegments = [];
+    for (let i = 0; i < validSegments.length; i++) {
+      const current = validSegments[i];
+      const nextTrigger = (i + 1 < validSegments.length) ? validSegments[i + 1] : null;
+      const nextTriggerStart = nextTrigger ? nextTrigger.startWordIndex : wordList.length;
 
-      segments.push({
-        raw: t.rawContent,
-        quoteCandidate: quoteCandidate,
-        commentary: commentary
+      // Find boundary due to silence gap
+      let silenceBoundary = nextTriggerStart;
+      if (silenceTimeout && silenceTimeout > 0 && current.endWordIndex < nextTriggerStart) {
+        for (let j = current.endWordIndex; j < nextTriggerStart - 1; j++) {
+          const gap = wordList[j + 1].start - wordList[j].end;
+          if (gap >= silenceTimeout) {
+            silenceBoundary = j + 1;
+            this.log("debug", `Silence gap ${gap.toFixed(2)}s at word ${j + 1}; ending segment`);
+            break;
+          }
+        }
+      }
+
+      const segmentEnd = Math.min(nextTriggerStart, silenceBoundary);
+      const segmentWords = wordList.slice(current.endWordIndex, segmentEnd);
+      const quoteCandidate = segmentWords.slice(0, current.matchedCount).map(w => w.word).join(" ");
+      const commentary = segmentWords.slice(current.matchedCount).map(w => w.word).join(" ");
+
+      finalSegments.push({
+        trigger: current.phrase,
+        color: current.color,
+        quoteCandidate,
+        commentary
       });
     }
 
     // Log skipped triggers
-    for (const t of triggers) {
-      if (!t.valid) {
-        this.log("info", `Trigger at ${t.triggerIndex} did not match; skipping`);
+    for (const s of candidateSegments) {
+      if (!s.valid) {
+        this.log("info", `Trigger '${s.phrase}' at word ${s.startWordIndex} did not match; skipping`);
       }
     }
 
-    return segments;
+    return finalSegments;
+  },
+
+  buildWordList(transcript, words) {
+    if (words && Array.isArray(words) && words.length > 0) {
+      return words.map(w => ({
+        word: w.word || "",
+        normalized: w.normalized || this.normalizeWord(w.word || ""),
+        start: typeof w.start === "number" ? w.start : null,
+        end: typeof w.end === "number" ? w.end : null
+      })).filter(w => w.word.length > 0);
+    }
+
+    // Fallback: split transcript into words without timestamps
+    const parts = transcript.split(/\s+/).filter(w => w.length > 0);
+    let time = 0;
+    return parts.map((word, i) => ({
+      word,
+      normalized: this.normalizeWord(word),
+      start: time + i * 0.1,
+      end: time + (i + 1) * 0.1
+    }));
+  },
+
+  normalizeWord(word) {
+    return word.replace(/[^\w\-]/g, "").toLowerCase();
+  },
+
+  findTriggerOccurrences(wordList, triggers) {
+    const occurrences = [];
+
+    // Sort triggers by word count descending so longer phrases are checked first
+    const sortedTriggers = triggers
+      .map(t => ({ ...t, words: t.phrase.split(/\s+/).filter(w => w.length > 0) }))
+      .filter(t => t.words.length > 0)
+      .sort((a, b) => b.words.length - a.words.length);
+
+    const used = new Array(wordList.length).fill(false);
+
+    for (let i = 0; i < wordList.length; i++) {
+      if (used[i]) continue;
+
+      for (const trigger of sortedTriggers) {
+        const tw = trigger.words;
+        if (i + tw.length > wordList.length) continue;
+
+        let match = true;
+        for (let k = 0; k < tw.length; k++) {
+          if (this.normalizeWord(tw[k]) !== wordList[i + k].normalized) {
+            match = false;
+            break;
+          }
+        }
+
+        if (match) {
+          const endIndex = i + tw.length;
+          for (let k = i; k < endIndex; k++) used[k] = true;
+          occurrences.push({
+            startWordIndex: i,
+            endWordIndex: endIndex,
+            phrase: trigger.phrase,
+            color: trigger.color || this.colors.yellow
+          });
+          // Skip past this trigger; do not check other triggers at same start position
+          i = endIndex - 1;
+          break;
+        }
+      }
+    }
+
+    return occurrences.sort((a, b) => a.startWordIndex - b.startWordIndex);
   },
 
   findQuoteInPDF(fullText, quoteCandidate, threshold) {
