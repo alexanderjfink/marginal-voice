@@ -1,138 +1,172 @@
-<vbox
-  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
-  xmlns:html="http://www.w3.org/1999/xhtml"
+<div xmlns="http://www.w3.org/1999/xhtml"
   id="marginalvoice-preferences"
-  style="padding: 16px; min-width: 500px;"
+  style="padding: 16px; min-width: 500px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;"
 >
-  <html:style>
+  <style>
+    #marginalvoice-preferences h3 {
+      margin: 0 0 12px 0;
+      font-size: 1.05em;
+      font-weight: 600;
+    }
+    #marginalvoice-preferences .mv-section {
+      margin-bottom: 18px;
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background: #fafafa;
+    }
     #marginalvoice-preferences .mv-row {
       margin: 8px 0;
+      display: flex;
       align-items: center;
     }
-    #marginalvoice-preferences html|label {
+    #marginalvoice-preferences label {
       display: inline-block;
       width: 220px;
       font-weight: 600;
+      flex-shrink: 0;
     }
-    #marginalvoice-preferences html|input,
-    #marginalvoice-preferences html|select,
-    #marginalvoice-preferences menulist {
+    #marginalvoice-preferences input[type="text"],
+    #marginalvoice-preferences input[type="number"],
+    #marginalvoice-preferences select {
       padding: 4px 6px;
       border: 1px solid #999;
       border-radius: 3px;
       background: #fff;
       color: #000;
+      font-size: 0.95em;
+    }
+    #marginalvoice-preferences input[type="text"] {
+      width: 300px;
+    }
+    #marginalvoice-preferences input[type="number"] {
+      width: 80px;
+    }
+    #marginalvoice-preferences select {
+      min-width: 120px;
+    }
+    #marginalvoice-preferences .mv-description {
+      margin: 5px 0;
+      font-size: 0.9em;
+      color: #666;
     }
     #marginalvoice-preferences .mv-trigger-row {
-      margin: 4px 0;
+      display: flex;
       align-items: center;
+      margin: 6px 0;
     }
-    #marginalvoice-preferences .mv-trigger-row html|input {
+    #marginalvoice-preferences .mv-trigger-row input[type="text"] {
       width: 180px;
     }
-    #marginalvoice-preferences .mv-trigger-row menulist {
-      width: 140px;
+    #marginalvoice-preferences .mv-trigger-row select {
+      width: 120px;
       margin-left: 8px;
     }
     #marginalvoice-preferences .mv-trigger-row button {
       margin-left: 8px;
+      width: 28px;
+      height: 24px;
+      padding: 0;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    #marginalvoice-preferences button {
+      padding: 4px 10px;
+      cursor: pointer;
     }
     #marginalvoice-preferences .mv-color-swatch {
       display: inline-block;
-      width: 14px;
-      height: 14px;
+      width: 12px;
+      height: 12px;
       border: 1px solid #666;
       margin-right: 6px;
       vertical-align: middle;
     }
-  </html:style>
+  </style>
 
-  <groupbox>
-    <label value="Transcription" style="font-weight: bold;" />
+  <div class="mv-section">
+    <h3>Transcription</h3>
 
-    <hbox class="mv-row" align="center">
-      <html:label for="marginalvoice-transcriptionMode">Mode:</html:label>
-      <menulist id="marginalvoice-transcriptionMode" oncommand="savePrefs()">
-        <menupopup>
-          <menuitem value="python" label="Python Script (faster-whisper)" />
-          <menuitem value="custom" label="Custom Command" />
-        </menupopup>
-      </menulist>
-    </hbox>
+    <div class="mv-row">
+      <label for="marginalvoice-transcriptionMode">Mode:</label>
+      <select id="marginalvoice-transcriptionMode" onchange="savePrefs()">
+        <option value="python">Python Script (faster-whisper)</option>
+        <option value="custom">Custom Command</option>
+      </select>
+    </div>
 
-    <hbox class="mv-row" align="center">
-      <html:label for="marginalvoice-pythonPath">Python Path (optional):</html:label>
-      <html:input type="text" id="marginalvoice-pythonPath" style="width: 300px;" onchange="savePrefs()" />
-    </hbox>
+    <div class="mv-row">
+      <label for="marginalvoice-pythonPath">Python Path (optional):</label>
+      <input type="text" id="marginalvoice-pythonPath" onchange="savePrefs()" />
+    </div>
 
-    <hbox class="mv-row" align="center">
-      <html:label for="marginalvoice-helperScriptPath">Helper Script Path (optional):</html:label>
-      <html:input type="text" id="marginalvoice-helperScriptPath" style="width: 300px;" onchange="savePrefs()" />
-    </hbox>
+    <div class="mv-row">
+      <label for="marginalvoice-helperScriptPath">Helper Script Path (optional):</label>
+      <input type="text" id="marginalvoice-helperScriptPath" onchange="savePrefs()" />
+    </div>
 
-    <hbox class="mv-row" align="center">
-      <html:label for="marginalvoice-customCommandPath">Custom Command Path:</html:label>
-      <html:input type="text" id="marginalvoice-customCommandPath" style="width: 300px;" onchange="savePrefs()" />
-    </hbox>
+    <div class="mv-row">
+      <label for="marginalvoice-customCommandPath">Custom Command Path:</label>
+      <input type="text" id="marginalvoice-customCommandPath" onchange="savePrefs()" />
+    </div>
 
-    <hbox class="mv-row" align="center">
-      <html:label for="marginalvoice-customCommandArgs">Custom Command Args (use {audio}):</html:label>
-      <html:input type="text" id="marginalvoice-customCommandArgs" style="width: 300px;" onchange="savePrefs()" />
-    </hbox>
+    <div class="mv-row">
+      <label for="marginalvoice-customCommandArgs">Custom Command Args (use {audio}):</label>
+      <input type="text" id="marginalvoice-customCommandArgs" onchange="savePrefs()" />
+    </div>
 
-    <hbox class="mv-row" align="center">
-      <html:label for="marginalvoice-whisperModel">Whisper Model:</html:label>
-      <html:input type="text" id="marginalvoice-whisperModel" style="width: 120px;" onchange="savePrefs()" />
-    </hbox>
-  </groupbox>
+    <div class="mv-row">
+      <label for="marginalvoice-whisperModel">Whisper Model:</label>
+      <input type="text" id="marginalvoice-whisperModel" style="width: 120px;" onchange="savePrefs()" />
+    </div>
+  </div>
 
-  <groupbox style="margin-top: 12px;">
-    <label value="Trigger Words &amp; Colors" style="font-weight: bold;" />
+  <div class="mv-section">
+    <h3>Trigger Words &amp; Colors</h3>
 
-    <description style="margin: 5px 0; font-size: 0.9em; color: gray;">
+    <p class="mv-description">
       Say a trigger phrase followed by the text you want highlighted.
-    </description>
+    </p>
 
-    <vbox id="marginalvoice-triggers-list" style="margin: 8px 0;">
-    </vbox>
+    <div id="marginalvoice-triggers-list">
+    </div>
 
-    <hbox style="margin-top: 8px;">
-      <button label="+ Add Trigger" oncommand="addTriggerRow()" />
-      <button label="Reset Defaults" oncommand="resetDefaults()" style="margin-left: 8px;" />
-    </hbox>
-  </groupbox>
+    <div style="margin-top: 10px;">
+      <button type="button" onclick="addTriggerRow()">+ Add Trigger</button>
+      <button type="button" onclick="resetDefaults()" style="margin-left: 8px;">Reset Defaults</button>
+    </div>
+  </div>
 
-  <groupbox style="margin-top: 12px;">
-    <label value="Annotation Behavior" style="font-weight: bold;" />
+  <div class="mv-section">
+    <h3>Annotation Behavior</h3>
 
-    <hbox class="mv-row" align="center">
-      <html:label for="marginalvoice-silenceTimeout">Silence Timeout (seconds):</html:label>
-      <html:input type="number" id="marginalvoice-silenceTimeout" style="width: 80px;" min="1" max="60" onchange="savePrefs()" />
-    </hbox>
+    <div class="mv-row">
+      <label for="marginalvoice-silenceTimeout">Silence Timeout (seconds):</label>
+      <input type="number" id="marginalvoice-silenceTimeout" min="1" max="60" onchange="savePrefs()" />
+    </div>
 
-    <hbox class="mv-row" align="center">
-      <html:label for="marginalvoice-logLevel">Log Level:</html:label>
-      <menulist id="marginalvoice-logLevel" oncommand="savePrefs()">
-        <menupopup>
-          <menuitem value="debug" label="Debug" />
-          <menuitem value="info" label="Info" />
-          <menuitem value="warn" label="Warn" />
-          <menuitem value="error" label="Error" />
-        </menupopup>
-      </menulist>
-    </hbox>
+    <div class="mv-row">
+      <label for="marginalvoice-logLevel">Log Level:</label>
+      <select id="marginalvoice-logLevel" onchange="savePrefs()">
+        <option value="debug">Debug</option>
+        <option value="info">Info</option>
+        <option value="warn">Warn</option>
+        <option value="error">Error</option>
+      </select>
+    </div>
 
-    <hbox class="mv-row" align="center">
-      <checkbox id="marginalvoice-skipDuplicates" label="Append commentary to existing highlights" oncommand="savePrefs()" />
-    </hbox>
-  </groupbox>
+    <div class="mv-row">
+      <input type="checkbox" id="marginalvoice-skipDuplicates" onchange="savePrefs()" />
+      <label for="marginalvoice-skipDuplicates" style="width: auto; margin-left: 6px; font-weight: normal;">Append commentary to existing highlights</label>
+    </div>
+  </div>
 
-  <groupbox style="margin-top: 12px;">
-    <label value="Dependencies" style="font-weight: bold;" />
-    <description style="margin-top: 5px; font-size: 0.9em; color: gray;">
+  <div class="mv-section">
+    <h3>Dependencies</h3>
+    <p class="mv-description">
       For Python mode, install: pip install faster-whisper pymupdf
-    </description>
-  </groupbox>
+    </p>
+  </div>
 
   <script>
     <![CDATA[
@@ -156,29 +190,22 @@
         { phrase: "Definition", color: "#5fb236" }
       ];
 
-      function _mvGet(key, fallback) {
+      function mvGet(key, fallback) {
         try {
-          const p = Components.classes["@mozilla.org/preferences-service;1"]
-            .getService(Components.interfaces.nsIPrefBranch);
-          const full = MV_PREFIX + key;
-          const t = p.getPrefType(full);
-          if (t === 0) return fallback;
-          if (t === 128) return p.getBoolPref(full);
-          if (t === 64) return p.getIntPref(full);
-          return p.getStringPref(full);
-        } catch (_) {
-          return fallback;
+          if (typeof Zotero !== "undefined" && Zotero.Prefs && Zotero.Prefs.get) {
+            return Zotero.Prefs.get(MV_PREFIX + key) || fallback;
+          }
+        } catch (e) {
+          dump("[MarginalVoicePrefs] get failed: " + e + "\n");
         }
+        return fallback;
       }
 
-      function _mvSet(key, value) {
+      function mvSet(key, value) {
         try {
-          const p = Components.classes["@mozilla.org/preferences-service;1"]
-            .getService(Components.interfaces.nsIPrefBranch);
-          const full = MV_PREFIX + key;
-          if (typeof value === "boolean") p.setBoolPref(full, value);
-          else if (typeof value === "number") p.setIntPref(full, value);
-          else p.setStringPref(full, String(value));
+          if (typeof Zotero !== "undefined" && Zotero.Prefs && Zotero.Prefs.set) {
+            Zotero.Prefs.set(MV_PREFIX + key, value);
+          }
         } catch (e) {
           dump("[MarginalVoicePrefs] set failed: " + e + "\n");
         }
@@ -195,7 +222,7 @@
 
       function getTriggers() {
         try {
-          const raw = _mvGet("triggers", "");
+          const raw = mvGet("triggers", "");
           if (!raw) return MV_DEFAULT_TRIGGERS.slice();
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -207,61 +234,63 @@
       }
 
       function saveTriggers(triggers) {
-        _mvSet("triggers", JSON.stringify(triggers));
+        mvSet("triggers", JSON.stringify(triggers));
       }
 
-      function createXul(tag) {
-        return document.createElementNS("http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul", tag);
-      }
-
-      function createColorMenulist(selectedValue) {
-        const menulist = createXul("menulist");
-        const popup = createXul("menupopup");
+      function createColorSelect(selectedValue) {
+        const select = document.createElement("select");
         for (const c of MV_COLORS) {
-          const item = createXul("menuitem");
-          item.setAttribute("value", c.value);
-          item.setAttribute("label", c.name);
-          item.setAttribute("style", "font-weight: normal;");
-          popup.appendChild(item);
+          const option = document.createElement("option");
+          option.value = c.value;
+          option.textContent = c.name;
+          select.appendChild(option);
         }
-        menulist.appendChild(popup);
-        menulist.setAttribute("value", selectedValue || MV_COLORS[0].value);
-        menulist.addEventListener("command", savePrefs);
-        return menulist;
+        select.value = selectedValue || MV_COLORS[0].value;
+        select.addEventListener("change", savePrefs);
+        return select;
       }
 
       function renderTriggers() {
         const container = document.getElementById("marginalvoice-triggers-list");
-        while (container.firstChild) {
-          container.removeChild(container.firstChild);
+        if (!container) {
+          mvLog("renderTriggers: container not found");
+          return;
         }
+        container.innerHTML = "";
 
         const triggers = getTriggers();
+        mvLog("renderTriggers: " + triggers.length + " triggers");
         for (let i = 0; i < triggers.length; i++) {
-          const row = createXul("hbox");
-          row.setAttribute("class", "mv-trigger-row");
-          row.setAttribute("align", "center");
-
-          const input = document.createElementNS("http://www.w3.org/1999/xhtml", "input");
-          input.setAttribute("type", "text");
-          input.setAttribute("placeholder", "Trigger phrase");
-          input.value = triggers[i].phrase || "";
-          input.addEventListener("change", savePrefs);
-          row.appendChild(input);
-
-          const colorList = createColorMenulist(triggers[i].color);
-          row.appendChild(colorList);
-
-          const removeBtn = createXul("button");
-          removeBtn.setAttribute("label", "−");
-          removeBtn.addEventListener("command", function() {
-            if (row.parentNode) row.parentNode.removeChild(row);
-            savePrefs();
-          });
-          row.appendChild(removeBtn);
-
-          container.appendChild(row);
+          container.appendChild(createTriggerRow(triggers[i]));
         }
+      }
+
+      function createTriggerRow(trigger) {
+        trigger = trigger || { phrase: "", color: MV_COLORS[0].value };
+
+        const row = document.createElement("div");
+        row.className = "mv-trigger-row";
+
+        const input = document.createElement("input");
+        input.type = "text";
+        input.placeholder = "Trigger phrase";
+        input.value = trigger.phrase || "";
+        input.addEventListener("change", savePrefs);
+        row.appendChild(input);
+
+        const colorSelect = createColorSelect(trigger.color);
+        row.appendChild(colorSelect);
+
+        const removeBtn = document.createElement("button");
+        removeBtn.type = "button";
+        removeBtn.textContent = "−";
+        removeBtn.addEventListener("click", function() {
+          row.remove();
+          savePrefs();
+        });
+        row.appendChild(removeBtn);
+
+        return row;
       }
 
       function collectTriggers() {
@@ -269,10 +298,10 @@
         const triggers = [];
         for (const row of container.children) {
           const input = row.querySelector("input");
-          const colorList = row.querySelector("menulist");
+          const colorSelect = row.querySelector("select");
           const phrase = (input.value || "").trim();
           if (phrase) {
-            triggers.push({ phrase, color: colorList.value });
+            triggers.push({ phrase, color: colorSelect.value });
           }
         }
         return triggers;
@@ -280,29 +309,9 @@
 
       function addTriggerRow() {
         const container = document.getElementById("marginalvoice-triggers-list");
-        const row = createXul("hbox");
-        row.setAttribute("class", "mv-trigger-row");
-        row.setAttribute("align", "center");
-
-        const input = document.createElementNS("http://www.w3.org/1999/xhtml", "input");
-        input.setAttribute("type", "text");
-        input.setAttribute("placeholder", "Trigger phrase");
-        input.addEventListener("change", savePrefs);
-        row.appendChild(input);
-
-        const colorList = createColorMenulist(MV_COLORS[0].value);
-        row.appendChild(colorList);
-
-        const removeBtn = createXul("button");
-        removeBtn.setAttribute("label", "−");
-        removeBtn.addEventListener("command", function() {
-          if (row.parentNode) row.parentNode.removeChild(row);
-          savePrefs();
-        });
-        row.appendChild(removeBtn);
-
+        const row = createTriggerRow();
         container.appendChild(row);
-        input.focus();
+        row.querySelector("input").focus();
       }
 
       function resetDefaults() {
@@ -314,15 +323,15 @@
       function loadPrefs() {
         mvLog("loadPrefs called");
         try {
-          document.getElementById("marginalvoice-transcriptionMode").value = _mvGet("transcriptionMode", "python");
-          document.getElementById("marginalvoice-pythonPath").value = _mvGet("pythonPath", "");
-          document.getElementById("marginalvoice-helperScriptPath").value = _mvGet("helperScriptPath", "");
-          document.getElementById("marginalvoice-customCommandPath").value = _mvGet("customCommandPath", "");
-          document.getElementById("marginalvoice-customCommandArgs").value = _mvGet("customCommandArgs", "");
-          document.getElementById("marginalvoice-whisperModel").value = _mvGet("whisperModel", "base");
-          document.getElementById("marginalvoice-silenceTimeout").value = _mvGet("silenceTimeout", 5);
-          document.getElementById("marginalvoice-skipDuplicates").checked = _mvGet("skipDuplicates", true);
-          document.getElementById("marginalvoice-logLevel").value = _mvGet("logLevel", "info");
+          document.getElementById("marginalvoice-transcriptionMode").value = mvGet("transcriptionMode", "python");
+          document.getElementById("marginalvoice-pythonPath").value = mvGet("pythonPath", "");
+          document.getElementById("marginalvoice-helperScriptPath").value = mvGet("helperScriptPath", "");
+          document.getElementById("marginalvoice-customCommandPath").value = mvGet("customCommandPath", "");
+          document.getElementById("marginalvoice-customCommandArgs").value = mvGet("customCommandArgs", "");
+          document.getElementById("marginalvoice-whisperModel").value = mvGet("whisperModel", "base");
+          document.getElementById("marginalvoice-silenceTimeout").value = mvGet("silenceTimeout", 5);
+          document.getElementById("marginalvoice-skipDuplicates").checked = mvGet("skipDuplicates", true);
+          document.getElementById("marginalvoice-logLevel").value = mvGet("logLevel", "info");
           renderTriggers();
           mvLog("loadPrefs done");
         } catch (e) {
@@ -333,15 +342,15 @@
       function savePrefs() {
         mvLog("savePrefs called");
         try {
-          _mvSet("transcriptionMode", document.getElementById("marginalvoice-transcriptionMode").value);
-          _mvSet("pythonPath", document.getElementById("marginalvoice-pythonPath").value);
-          _mvSet("helperScriptPath", document.getElementById("marginalvoice-helperScriptPath").value);
-          _mvSet("customCommandPath", document.getElementById("marginalvoice-customCommandPath").value);
-          _mvSet("customCommandArgs", document.getElementById("marginalvoice-customCommandArgs").value);
-          _mvSet("whisperModel", document.getElementById("marginalvoice-whisperModel").value);
-          _mvSet("silenceTimeout", parseInt(document.getElementById("marginalvoice-silenceTimeout").value, 10) || 5);
-          _mvSet("skipDuplicates", document.getElementById("marginalvoice-skipDuplicates").checked);
-          _mvSet("logLevel", document.getElementById("marginalvoice-logLevel").value);
+          mvSet("transcriptionMode", document.getElementById("marginalvoice-transcriptionMode").value);
+          mvSet("pythonPath", document.getElementById("marginalvoice-pythonPath").value);
+          mvSet("helperScriptPath", document.getElementById("marginalvoice-helperScriptPath").value);
+          mvSet("customCommandPath", document.getElementById("marginalvoice-customCommandPath").value);
+          mvSet("customCommandArgs", document.getElementById("marginalvoice-customCommandArgs").value);
+          mvSet("whisperModel", document.getElementById("marginalvoice-whisperModel").value);
+          mvSet("silenceTimeout", parseInt(document.getElementById("marginalvoice-silenceTimeout").value, 10) || 5);
+          mvSet("skipDuplicates", document.getElementById("marginalvoice-skipDuplicates").checked);
+          mvSet("logLevel", document.getElementById("marginalvoice-logLevel").value);
           saveTriggers(collectTriggers());
           mvLog("savePrefs done");
         } catch (e) {
@@ -358,4 +367,4 @@
     ]]>
   </script>
 
-</vbox>
+</div>
