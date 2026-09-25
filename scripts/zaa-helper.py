@@ -132,7 +132,7 @@ def find_quote_in_words(words, quote_text, page_hint=None):
         return None
 
     max_words = min(6, len(quote_words))
-    min_words = min(4, len(quote_words))
+    min_words = min(1, len(quote_words))
 
     # Optionally prioritize a page
     search_words = words

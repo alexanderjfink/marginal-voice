@@ -173,45 +173,40 @@ const MarginalVoice = {
     itemMenu.appendChild(sep);
     this.menuItems.push(sep);
 
-    // Submenu
-    const menu = doc.createXULElement("menu");
-    menu.id = "marginalvoice-menu";
-    menu.setAttribute("label", "Marginal Voice");
-    this.menuItems.push(menu);
+    // Single-item action: right-click on an audio attachment
+    const annotateOne = doc.createXULElement("menuitem");
+    annotateOne.id = "marginalvoice-annotate-one";
+    annotateOne.setAttribute("label", "Marginal Voice: Transcribe and Annotate");
+    annotateOne.addEventListener("command", () => this.handleTranscribeCommand(window, false));
+    itemMenu.appendChild(annotateOne);
+    this.menuItems.push(annotateOne);
 
-    const popup = doc.createXULElement("menupopup");
-    popup.id = "marginalvoice-popup";
-    menu.appendChild(popup);
+    // Bulk action: right-click on a source (or selection with multiple audio attachments)
+    const annotateAll = doc.createXULElement("menuitem");
+    annotateAll.id = "marginalvoice-annotate-all";
+    annotateAll.setAttribute("label", "Marginal Voice: Transcribe and Annotate All");
+    annotateAll.addEventListener("command", () => this.handleTranscribeCommand(window, true));
+    itemMenu.appendChild(annotateAll);
+    this.menuItems.push(annotateAll);
 
-    // Transcribe and Annotate
-    const item1 = doc.createXULElement("menuitem");
-    item1.id = "marginalvoice-transcribe-one";
-    item1.setAttribute("label", "Transcribe and Annotate");
-    item1.addEventListener("command", () => this.handleTranscribeCommand(window, false));
-    popup.appendChild(item1);
-
-    // Transcribe and Annotate All Audio
-    const item2 = doc.createXULElement("menuitem");
-    item2.id = "marginalvoice-transcribe-all";
-    item2.setAttribute("label", "Transcribe and Annotate All Audio");
-    item2.addEventListener("command", () => this.handleTranscribeCommand(window, true));
-    popup.appendChild(item2);
-
-    itemMenu.appendChild(menu);
-
-    // Show/hide menu based on selection (audio attachments or parents with audio attachments)
+    // Show/hide based on selection
     itemMenu.addEventListener("popupshowing", () => {
       const items = window.ZoteroPane.getSelectedItems();
-      const audioItems = this.getAudioAttachmentsFromItems(items);
-      const hasAudio = audioItems.length > 0;
-      menu.hidden = !hasAudio;
-      sep.hidden = !hasAudio;
+      const directAudio = items.filter(item => this.isAudioAttachment(item));
+      const allAudio = this.getAudioAttachmentsFromItems(items);
+      const sourceAudioCount = allAudio.length - directAudio.length;
+      const hasSourceWithAudio = sourceAudioCount > 0;
+
+      annotateOne.hidden = directAudio.length === 0;
+      annotateAll.hidden = !hasSourceWithAudio && directAudio.length <= 1;
+      const anyVisible = !annotateOne.hidden || !annotateAll.hidden;
+      sep.hidden = !anyVisible;
     });
   },
 
   unregisterMenus() {
     // Remove menu elements from all windows by ID
-    const ids = ["marginalvoice-separator", "marginalvoice-menu"];
+    const ids = ["marginalvoice-separator", "marginalvoice-annotate-one", "marginalvoice-annotate-all"];
     for (const win of Zotero.getMainWindows()) {
       const doc = win.document;
       for (const id of ids) {
@@ -384,7 +379,7 @@ const MarginalVoice = {
       this.log("warn", "Warnings:", warnings);
     }
 
-    return { created: createdCount, skipped: skippedCount, warnings };
+    return { created: createdCount, appended: appendedCount, warnings };
   },
 
   async transcribeAudio(audioPath) {
@@ -586,7 +581,7 @@ const MarginalVoice = {
     for (const occ of occurrences) {
       const contentWords = wordList.slice(occ.endWordIndex);
       const maxWords = Math.min(6, contentWords.length);
-      const minWords = Math.min(4, contentWords.length);
+      const minWords = Math.min(1, contentWords.length);
 
       if (maxWords < minWords || minWords < 1) continue;
 
